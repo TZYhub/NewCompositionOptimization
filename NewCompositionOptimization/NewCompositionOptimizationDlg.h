@@ -37,7 +37,12 @@ protected:
 	void InitNatureList();							//初始化性质列表
 	void InitResultList();							//初始化结果列表
 	void LoadFixeCalcCoe();							//T加载固定性质系数
+	void LoadNatureChoiceValue();					//T加载性质极大值和极小值
 	void LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr);	//从配置文件中获取字符串数据
+
+	void UpDateComponetList();						//当组分数组有改动时，调用该函数重新显示
+	void UpDateNatureList();						//当性质数组有改动时，调用该函数重新显示
+	void UpDateResultList();						//当组分数组或性质有改动时，调用该函数重新显示结果列表
 
 protected:
 	//T获取性质计算系数,包括固定值和不固定值的,每次计算前都来调用此函数，以获取对应系数
@@ -48,21 +53,31 @@ protected:
 	float GetNatureCalcCoeWithFormula(const CString& cName, const CString& nName, const float cValue);
 
 
+	BOOL GetSelectCheckBox(const CString& str);//T获取选择的复选框，传入为Component获取组分，传入为Nature获取性质
+	void CalculateNature();
+	void Calculate(map<int,vector<float>>::iterator itMap);
+	void Calculate(const int index, vector<float> &vt);
+
+	void CombinationTruncationData();				//T组合截断组分数据
+
 	bool m_bIsSelectComponent;						//T是否进行组分选择
 	bool m_bIsSelectNature;							//T是否进行性质选择
 
-
+	int m_row;
+	int m_column;
 
 protected:
 	//T此程序中，规定与组分有关的数组则顺序都与组分数组顺序相同 与性质有关的都与性质数组顺序相同
 	vector<CComponent> m_vtComponent;	//T组分数组
 	vector<CNature> m_vtNature;			//T性质数组
 	vector<SNatureCalcCoefficient> m_vtFixedNatureCalcCoe;//T固定性质计算系数数组
+	map<CString, ChoiceValue> m_mapNatureChoiceValue;//T性质选择极大值还是极小值
 
 	vector<vector<float>> m_vtSectionValue;//T组分数据截段构成数组  内部的vector<float>数组排序与m_vtComponent数组相同
 	map<CNature, vector<float>> m_mapNatureResult;//T根据截段组分%和组分系数 计算性质结果
 												//T如 ： 密度，at(1)=0.93 at(2)=1.2 at(3)=1.3
 
+	vector<vector<float>> m_vtComponentGrouping;//T性质分组结果，即根据截段数据进行组合的数组
 public:
 	//T组分优选按钮
 	afx_msg void OnBnClickedBtnStartOptimization();
@@ -73,4 +88,10 @@ public:
 	CListCtrl m_NatureList;
 	CListCtrl m_ResultList;
 	afx_msg void OnBnClickedBtnSelectNature();
+	CEdit m_inputComEdit;
+	CEdit m_inputNatureEdit;
+	afx_msg void OnNMDblclkListComponent(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnEnKillfocusEdit1();
+	afx_msg void OnNMDblclkListNature(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnEnKillfocusEdit2();
 };
