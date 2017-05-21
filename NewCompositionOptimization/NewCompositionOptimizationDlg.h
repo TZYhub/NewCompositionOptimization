@@ -46,11 +46,12 @@ protected:
 	void InitResultList();								//初始化结果列表
 	void LoadFixeCalcCoe();								//T加载固定性质系数
 	void LoadNatureChoiceValue();						//T加载性质极大值和极小值
-	void LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr);	//从配置文件中获取字符串数据
+	void LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr, const CString& strPath = _T(""));	//从配置文件中获取字符串数据
+	void WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr);//写数据到配置文件中
 
-	void UpDateComponetList();							//当组分数组有改动时，调用该函数重新显示
-	void UpDateNatureList();							//当性质数组有改动时，调用该函数重新显示
-	void UpDateResultList();							//当组分数组或性质有改动时，调用该函数重新显示结果列表
+	void UpdateComponetList();							//当组分数组有改动时，调用该函数重新显示
+	void UpdateNatureList();							//当性质数组有改动时，调用该函数重新显示
+	void UpdateResultList();							//当组分数组或性质有改动时，调用该函数重新显示结果列表
 
 
 	//T获取性质计算系数,包括固定值和不固定值的,每次计算前都来调用此函数，以获取对应系数
@@ -103,4 +104,6 @@ public:
 	int m_column;										//鼠标双击列表选中的列
 	afx_msg void OnBnClickedBtnClear();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	afx_msg void OnBnClickedBinImport();
+	afx_msg void OnBnClickedBtnExport();
 };

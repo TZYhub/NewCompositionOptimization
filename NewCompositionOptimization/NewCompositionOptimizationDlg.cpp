@@ -78,6 +78,8 @@ BEGIN_MESSAGE_MAP(CNewCompositionOptimizationDlg, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST_NATURE, &CNewCompositionOptimizationDlg::OnNMDblclkListNature)
 	ON_EN_KILLFOCUS(IDC_EDIT2, &CNewCompositionOptimizationDlg::OnEnKillfocusEdit2)
 	ON_BN_CLICKED(IDC_BTN_CLEAR, &CNewCompositionOptimizationDlg::OnBnClickedBtnClear)
+	ON_BN_CLICKED(IDC_BIN_IMPORT, &CNewCompositionOptimizationDlg::OnBnClickedBinImport)
+	ON_BN_CLICKED(IDC_BTN_EXPORT, &CNewCompositionOptimizationDlg::OnBnClickedBtnExport)
 END_MESSAGE_MAP()
 
 
@@ -323,17 +325,26 @@ void CNewCompositionOptimizationDlg::LoadNatureChoiceValue()
 }
 
 //从配置文件中获取字符串数据
-void CNewCompositionOptimizationDlg::LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr)
+void CNewCompositionOptimizationDlg::LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr, const CString& strPath /*= ""*/)
 {
 	CString strRead = _T("");
 	CString des = _T("");
-	::GetCurrentDirectory(MAX_PATH, des.GetBuffer(MAX_PATH));
-	des.ReleaseBuffer();
-	des += "\\config.ini";
+	
+	if ("" == strPath)
+	{
+		::GetCurrentDirectory(MAX_PATH, des.GetBuffer(MAX_PATH));
+		des.ReleaseBuffer();
+		des += "\\config.ini";
+	}
+	else
+	{
+		des = strPath;
+	}
+	
 	int nCount = GetPrivateProfileInt(keyStr, _T("nCount"), 0, des);
 	if (0 == nCount)
 	{
-		MessageBox(_T("读取配置文件中的组分失败,请检查配置文件！"),DlgTitle);
+		MessageBox(_T("读取配置文件中的")+keyStr+_T("失败,请检查配置文件！"),DlgTitle);
 		return;
 	}
 	else
@@ -349,8 +360,30 @@ void CNewCompositionOptimizationDlg::LoadVtStrFromIni(vector<CString> &vtStr,con
 	}
 }	
 
+
+//写数据到配置文件中WritePrivateProfileString
+void CNewCompositionOptimizationDlg::WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr)
+{
+	CString strWrite = _T("");
+	CString des = _T("");
+	::GetCurrentDirectory(MAX_PATH, des.GetBuffer(MAX_PATH));
+	des.ReleaseBuffer();
+	des += "\\export.ini";
+	int nCount = vtStr.size();
+	strWrite.Format(_T("%d"),nCount);
+	WritePrivateProfileString(keyStr,_T("nCount"),strWrite,des);
+ 	TCHAR ch[50];
+ 	for (int i = 1; i <= nCount; i++)
+ 	{
+ 		_itot_s(i, ch, _countof(ch), 10);
+		WritePrivateProfileString(keyStr,ch,vtStr.at(i-1),des);
+ 		strWrite.ReleaseBuffer();
+ 	}
+}
+
+
 //当组分数组有改动时，调用该函数重新显示
-void CNewCompositionOptimizationDlg::UpDateComponetList()
+void CNewCompositionOptimizationDlg::UpdateComponetList()
 {
 	m_ComponentList.DeleteAllItems();
 	//从一个数组里导入需要计算的组成物质
@@ -368,11 +401,11 @@ void CNewCompositionOptimizationDlg::UpDateComponetList()
 			m_ComponentList.SetItemText(pos-1, 2, it->GetStrComponentRange());
 		}
 	}
-	UpDateResultList();
+	UpdateResultList();
 }
 
 //当性质数组有改动时，调用该函数重新显示
-void CNewCompositionOptimizationDlg::UpDateNatureList()
+void CNewCompositionOptimizationDlg::UpdateNatureList()
 {
 	m_NatureList.DeleteAllItems();
 	//从一个数组里导入需要计算的组成物质
@@ -390,11 +423,11 @@ void CNewCompositionOptimizationDlg::UpDateNatureList()
 			m_NatureList.SetItemText(pos-1, 2, it->GetStrNatureRange());
 		}
 	}
-	UpDateResultList();
+	UpdateResultList();
 }
 
 //当组分数组或性质有改动时，调用该函数重新显示结果列表
-void CNewCompositionOptimizationDlg::UpDateResultList()
+void CNewCompositionOptimizationDlg::UpdateResultList()
 {
 	m_ResultList.DeleteAllItems();
 	int nColumnCount = m_ResultList.GetHeaderCtrl()->GetItemCount();
@@ -1021,10 +1054,24 @@ void CNewCompositionOptimizationDlg::ClearData(bool bClearAll/* =false */)
 	m_mapAfterPreResultDi.clear();
 	if (bClearAll)
 	{
+		for (UINT i = IDC_CHECK_AL2O3; i < IDC_CHECK_ZrO2; i++)
+		{
+			if(((CButton*)GetDlgItem(i))->GetCheck())
+			{
+				((CButton*)GetDlgItem(i))->SetCheck(0);
+			}
+		}
+		for (UINT i = IDC_CHECK_1_RPZXS; i < IDC_CHECK_31_RHWD; i++)
+		{
+			if(((CButton*)GetDlgItem(i))->GetCheck())
+			{
+				((CButton*)GetDlgItem(i))->SetCheck(0);
+			}
+		}
 		m_vtComponent.clear();
 		m_vtNature.clear();
-		UpDateComponetList();
-		UpDateNatureList();
+		UpdateComponetList();
+		UpdateNatureList();
 	}
 }
 
@@ -1090,7 +1137,7 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnSelectComponent()
 	//把打钩的复选框，写入组分表格中
 	m_vtComponent.clear();
 	bool rt = GetSelectCheckBox(_T("Component"));
-	UpDateComponetList();
+	UpdateComponetList();
 	if (rt)
 	{
 		/*把对话框设置到第一个*/
@@ -1111,7 +1158,7 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnSelectNature()
 	// TODO: 在此添加控件通知处理程序代码
 	m_vtNature.clear();
 	bool rt = GetSelectCheckBox(_T("Nature"));
-	UpDateNatureList();
+	UpdateNatureList();
 	if (rt)
 	{
 		/*把对话框设置到第一个*/
@@ -1233,6 +1280,7 @@ BOOL CNewCompositionOptimizationDlg::PreTranslateMessage(MSG* pMsg)
 			else
 			{
 				UINT nID = pWnd->GetDlgCtrlID();
+				SetFocus();
 				if (IDC_EDIT1 == nID)//如果是组分表
 				{
 					NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
@@ -1267,4 +1315,121 @@ BOOL CNewCompositionOptimizationDlg::PreTranslateMessage(MSG* pMsg)
 		}  
 	}  
 	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+
+void CNewCompositionOptimizationDlg::OnBnClickedBinImport()
+{
+	// TODO: Add your control notification handler code here
+	//清理数据
+	ClearData(true);
+	//T选择文件夹
+	CString strPath;
+	::GetCurrentDirectory(MAX_PATH, strPath.GetBuffer(MAX_PATH));
+	strPath.ReleaseBuffer();
+	strPath += "\\export.ini";
+	//T读取数据
+	vector<CString> vtRead;
+	LoadVtStrFromIni(vtRead,_T("组分"),strPath);
+	//T把数据添加到变量及表格中，复选框需要勾选
+	//1.从配置文件中获取固定性质系数
+	UINT iSize = vtRead.size();
+	int a = 0;
+	CString strName;
+	CString strRange;
+	CString strCompare;
+	CComponent componet;
+	for (UINT i = 0; i < iSize; i++)
+	{
+		a = vtRead.at(i).Find(',');
+		strName = vtRead.at(i).Left(a);//1.取出逗号前的组分名
+		strRange = vtRead.at(i).Right(vtRead.at(i).GetLength() - a - 1);//3.取出性质系数的值
+		for (UINT i = IDC_CHECK_AL2O3; i < IDC_CHECK_ZrO2; i++)
+		{
+			GetDlgItem(i)->GetWindowText(strCompare);
+			if(strName == strCompare)
+			{
+				((CButton*)GetDlgItem(i))->SetCheck(1);
+			}
+		}
+
+
+
+		componet.SetComponentName(strName);
+		componet.SetStrComponentRange(strRange);
+		m_vtComponent.push_back(componet);
+	}
+
+	vtRead.clear();
+	LoadVtStrFromIni(vtRead,_T("性质"),strPath);
+	iSize = vtRead.size();
+	CNature nature;
+	map<CString, ChoiceValue>::iterator itMap;
+	for (UINT i = 0; i < iSize; i++)
+	{
+		a = vtRead.at(i).Find(',');
+		strName = vtRead.at(i).Left(a);//1.取出逗号前的组分名
+		strRange = vtRead.at(i).Right(vtRead.at(i).GetLength() - a - 1);//3.取出性质系数的值
+		for (UINT i = IDC_CHECK_1_RPZXS; i < IDC_CHECK_31_RHWD; i++)
+		{
+			GetDlgItem(i)->GetWindowText(strCompare);
+			if(strName == strCompare)
+			{
+				((CButton*)GetDlgItem(i))->SetCheck(1);
+			}
+		}
+
+		nature.SetNatureName(strName);
+		nature.SetStrNatureRange(strRange);
+		itMap = m_mapNatureChoiceValue.find(strName);
+		if (itMap != m_mapNatureChoiceValue.end())
+		{
+			nature.SetNatureChoiceValue(itMap->second);
+		}
+		m_vtNature.push_back(nature);
+	}
+	UpdateComponetList();
+	UpdateNatureList();
+	
+
+	//T标题显示为某某导入文件
+	
+
+}
+
+
+void CNewCompositionOptimizationDlg::OnBnClickedBtnExport()
+{
+	// TODO: Add your control notification handler code here
+	//T1判断有无数据，没有,导出没有意义
+	if (!JudgmentInput())
+		return;
+	//T2获取导出路径，文件名由用户取
+
+	//T3导出数据
+	//导出文件格式为 .ini  [组分]
+	//						nCount=1
+	//						1=Al2O3,1-2
+	//						[性质]
+	//						nCount=1
+	//						1=热膨胀系数，20-30
+	
+	//T写入组分
+	vector<CString> vtStrWrite;
+	int CSize = m_vtComponent.size();
+	for (int i = 0; i < CSize; i++)
+	{
+		vtStrWrite.push_back(m_vtComponent.at(i).GetComponentName()+_T(",")+m_vtComponent.at(i).GetStrComponentRange());
+	}
+	WriteStrToIni(vtStrWrite,_T("组分"));
+	//T写入性质
+	vtStrWrite.clear();
+	int NSize = m_vtNature.size();
+	for (int i = 0; i < NSize; i++)
+	{
+		vtStrWrite.push_back(m_vtNature.at(i).GetNatureName()+_T(",")+m_vtNature.at(i).GetStrNatureRange());
+	}
+	WriteStrToIni(vtStrWrite,_T("性质"));
+	MessageBox(_T("导出成功！"),DlgTitle);
+	
 }
