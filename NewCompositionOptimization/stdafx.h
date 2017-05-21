@@ -46,16 +46,17 @@ using namespace std;
 
 enum ChoiceValue
 {
-	LargeValue,SmallVaule
+	LargeValue = 0,SmallVaule
 };
 
 typedef struct SNatureCalcCoefficient	//T性质计算系数
 {
-	CString CompositionName;			//T组分名称
+	CString ComponentName;			//T组分名称
 	CString NatureName;					//T性质名称
 	float CoefficientValue;				//T系数值
 };
 
+const CString DlgTitle = _T("组分优选");
 //end
 
 #ifdef _UNICODE

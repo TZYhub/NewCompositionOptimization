@@ -50,8 +50,8 @@ END_MESSAGE_MAP()
 
 CNewCompositionOptimizationDlg::CNewCompositionOptimizationDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CNewCompositionOptimizationDlg::IDD, pParent)
-	,m_bIsSelectComponent(false)
-	,m_bIsSelectNature(false)
+	,m_row(-1)
+	,m_column(-1)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(CNewCompositionOptimizationDlg, CDialogEx)
 	ON_EN_KILLFOCUS(IDC_EDIT1, &CNewCompositionOptimizationDlg::OnEnKillfocusEdit1)
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST_NATURE, &CNewCompositionOptimizationDlg::OnNMDblclkListNature)
 	ON_EN_KILLFOCUS(IDC_EDIT2, &CNewCompositionOptimizationDlg::OnEnKillfocusEdit2)
+	ON_BN_CLICKED(IDC_BTN_CLEAR, &CNewCompositionOptimizationDlg::OnBnClickedBtnClear)
 END_MESSAGE_MAP()
 
 
@@ -272,7 +273,7 @@ void CNewCompositionOptimizationDlg::LoadFixeCalcCoe()
 	UINT iSize = vtCString.size();
 	int a = 0, b = 0;
 	SNatureCalcCoefficient NCC;
-	CString strCompositionName;
+	CString strComponentName;
 	CString strNatureName;
 	CString strCoefficientValue;
 	float CValue;
@@ -280,12 +281,12 @@ void CNewCompositionOptimizationDlg::LoadFixeCalcCoe()
 	{
 		a = vtCString.at(i).Find(',');
 		b = vtCString.at(i).ReverseFind(',');
-		strCompositionName = vtCString.at(i).Left(a);//1.取出逗号前的组分名
+		strComponentName = vtCString.at(i).Left(a);//1.取出逗号前的组分名
 		strNatureName = vtCString.at(i).Mid(a + 1, b - a - 1); //2.取出逗号后的性质名
 		strCoefficientValue = vtCString.at(i).Right(vtCString.at(i).GetLength() - b - 1);//3.取出性质系数的值
 		CValue = _ttof(strCoefficientValue);
 
-		NCC.CompositionName = strCompositionName;
+		NCC.ComponentName = strComponentName;
 		NCC.NatureName = strNatureName;
 		NCC.CoefficientValue = CValue;
 		m_vtFixedNatureCalcCoe.push_back(NCC);//T推入数组中
@@ -332,7 +333,7 @@ void CNewCompositionOptimizationDlg::LoadVtStrFromIni(vector<CString> &vtStr,con
 	int nCount = GetPrivateProfileInt(keyStr, _T("nCount"), 0, des);
 	if (0 == nCount)
 	{
-		MessageBox(_T("读取配置文件中的组分失败,请检查配置文件！"));
+		MessageBox(_T("读取配置文件中的组分失败,请检查配置文件！"),DlgTitle);
 		return;
 	}
 	else
@@ -396,6 +397,12 @@ void CNewCompositionOptimizationDlg::UpDateNatureList()
 void CNewCompositionOptimizationDlg::UpDateResultList()
 {
 	m_ResultList.DeleteAllItems();
+	int nColumnCount = m_ResultList.GetHeaderCtrl()->GetItemCount();
+	for (int i = 0;i < nColumnCount; i++)
+	{
+		m_ResultList.DeleteColumn(0);
+	}
+	m_ResultList.InsertColumn(0, _T("组分及性质"), LVCFMT_CENTER, 80); 
 	int pos = 1;
 	if (!m_vtComponent.empty())//有数据
 	{
@@ -426,24 +433,41 @@ void CNewCompositionOptimizationDlg::UpDateResultList()
 float CNewCompositionOptimizationDlg::GetNatureCalcCoefficient(const CString& cName, const CString nName,const float cValue)
 {
 	//T1、从固定值中查是否有，有，则返回值
-	float coeValue = GetFixedNatureCalcCoe(cName, nName, cValue);
+	float coeValue ;
+	bool rt = GetFixedNatureCalcCoe(cName, nName, cValue, coeValue);
 	//T2、调用计算公式来计算系数
-	if (coeValue < 0)//T如果固定值中没有，则使用公式计算
+	if (!rt)//T如果固定值中没有，则使用公式计算
 	{
 		coeValue = GetNatureCalcCoeWithFormula(cName, nName, cValue);
 	}
 	return coeValue;
 }
 
-//T从固定值中获取系数，若有，则返回大于0的值，若无则返回-1
-float CNewCompositionOptimizationDlg::GetFixedNatureCalcCoe(const CString& cName, const CString& nName, const float cValue)
+//T从固定值中获取系数，若有，则返回true,值存入rtValue中，若无则返回false
+bool CNewCompositionOptimizationDlg::GetFixedNatureCalcCoe(const CString& cName, const CString& nName, const float cValue, float& rtValue)
 {
-	return -1;
+	int iSize = m_vtFixedNatureCalcCoe.size();
+	SNatureCalcCoefficient NCTemp;
+	for (int i = 0; i < iSize; i++)
+	{
+		NCTemp = m_vtFixedNatureCalcCoe.at(i);
+		if (NCTemp.ComponentName == cName && NCTemp.NatureName == nName)
+		{
+			rtValue = NCTemp.CoefficientValue;
+			return true;
+		}
+	}
+	return false;
 }
 
 //T使用公式计算性质系数
 float CNewCompositionOptimizationDlg::GetNatureCalcCoeWithFormula(const CString& cName, const CString& nName, const float cValue)
 {
+	//此处只写了SiO2的折射率计算
+	if ("SiO2" == cName && "折射率" == nName)
+	{
+		return 1.475-0.0005*(cValue-67);//	SiO2的折射率系数=1.475-0.0005*（SiO2的组分含量-67）
+	}
 	return -1;
 }
 
@@ -496,62 +520,57 @@ BOOL CNewCompositionOptimizationDlg::GetSelectCheckBox(const CString& str)
 	return rt;
 }
 
+//判断输入是否符合优选要求
+bool CNewCompositionOptimizationDlg::JudgmentInput()
+{
+	//有任意列表没有数据，则退出///T输入范围值时是否添加判断输入合法
+	CString str;
+	if (m_vtComponent.empty())
+	{
+		MessageBox(_T("没有输入组分！"),DlgTitle);
+		return false;
+	}
+	else//判断否输入范围值
+	{
+		int iSize = m_vtComponent.size();
+		for (int i = 0; i < iSize; i++)
+		{
+			if ("" == m_vtComponent.at(i).GetStrComponentRange())
+			{
+				
+				MessageBox(_T("请输入组分\"")+m_vtComponent.at(i).GetComponentName()+_T("\"的范围!"),DlgTitle);
+				return false;
+			}
+		}
+	}
+	if (m_vtNature.empty())
+	{
+		MessageBox(_T("没有输入性质！"),DlgTitle);
+		return false;
+	}
+	else//判断否输入范围值
+	{
+		int iSize = m_vtNature.size();
+		for (int i = 0; i < iSize; i++)
+		{
+			if ("" == m_vtNature.at(i).GetStrNatureRange())
+			{
+
+				MessageBox(_T("请输入性质\"")+m_vtNature.at(i).GetNatureName()+_T("\"的范围!"),DlgTitle);
+				return false;
+			}
+		}
+	}
+}
+
 
 void CNewCompositionOptimizationDlg::CalculateNature()
 {
 	//T1、先把组分截断数组进行组合
 	CombinationTruncationData();
 
-	//T2、根据组合中每种组分的含量来获取不同性质的计算系数
-
-
-	//T3、有上面或去的系数和组分含量来计算性质
-
-
-
-
-
-	
-	//分组完成
-
-
-	//接下来计算每一组对应的膨胀系数值、折射率。。（按照输入的顺序来）
-	//	vector<CNature>::iterator vtCString = m_vtNature.begin();
-	//	vector<CNature>::iterator vtCStringEnd = m_vtNature.end();
-	//	for (; vtCString!=vtCStringEnd; ++vtCString)
-	//	{
-	//		//接下来计算每一组对应的膨胀系数值、折射率。。（按照输入的顺序来）
-	//		map<int,map<CString,float>>::iterator itMap2;
-	//		//膨胀系数
-	//		vector<float> vtNature;//获取各物质对应的膨胀系数
-	//		//size大小为m_vtComposition.size();
-	//		for (int i=0; i<typeNumber; i++)
-	//		{
-	//			itMap2 = m_mapAllNature.find(i);//找各个物质如 SiO2 Al2O3..
-	//			if (itMap2 != m_mapAllNature.end())//如果找到了
-	//			{
-	//				map<CString,float>::iterator map3 = itMap2->second.find(*vtCString);
-	//				if (map3 != itMap2->second.end())//如果找到了
-	//				{
-	//					vtNature.push_back(map3->second);
-	//				}
-	//			}	
-	//		}
-	//		int times = m_subResult.size();//有多少分组，循环多少次
-	//		float resultValue = 0;
-	//		vector<float> vtFloat;
-	//		vtFloat.clear();
-	//		for (int i=0; i<times; i++)
-	//		{
-	//			resultValue = 0;
-	//			for (int j=0; j<typeNumber; j++)
-	//			{
-	//				resultValue += vtNature.at(j) * m_subResult.at(i).at(j);
-	//			}
-	//			vtFloat.push_back(resultValue/100);
-	//		}
-	//		m_mapResult.insert(make_pair(*vtCString, vtFloat));
-	//	}
+	//T2、根据组合中每种组分的含量来获取不同性质的计算系数,并计算出结果，存放在m_mapNatureResult中
+	CalculateEachGroupNature();
 }
 
 
@@ -573,18 +592,15 @@ void CNewCompositionOptimizationDlg::Calculate(const int index, vector<float> &v
 	{
 		m_vtComponentGrouping.push_back(vtSub);
 	}
-
+	
 }
 
 //T组合截断组分数据
 void CNewCompositionOptimizationDlg::CombinationTruncationData()
 {
-	vector<float> vtSub;
+	m_vtComponentGrouping.clear();//清理上一次数据
 	int typeNumber = m_vtComponent.size();//有多少种物质
-	for (int i=0; i<typeNumber; i++)
-	{
-		vtSub.push_back(-1);
-	}
+	vector<float> vtSub(typeNumber);
 	//调用递归函数实现循环，实现分组
 	//分组数据存放到了vector<vector<float>> m_subResult中
 	//0组 1 3 5 7
@@ -598,59 +614,473 @@ void CNewCompositionOptimizationDlg::CombinationTruncationData()
 		vtSub.at(0) = vt.at(i);
 		Calculate(1, vtSub);
 	}
-	
+}
 
-	for (int i = 0; i < typeNumber; i++)//最外层的循环
+//T计算每一组对应的性质
+void CNewCompositionOptimizationDlg::CalculateEachGroupNature()
+{
+	int groupSize = m_vtComponentGrouping.size();//T分组数
+	vector<float> vtResult(groupSize);//大小为m_vtComponentGrouping的大小
+	int NSize = m_vtNature.size();
+	vector<float> vtTemp;
+	int tempSize;
+	float resultValue = 0;
+	for (int i = 0; i < NSize; i++)
 	{
-		
-		for (int j = 0; j < subSize; j++)
+		for (int j = 0; j < groupSize; j++)
 		{
-			vtSub.at(0) = vt.at(j);
-			Calculate(i+1, vtSub);
+			//获得截断分组的值，及组分的含量
+			vtTemp = m_vtComponentGrouping.at(j);
+			tempSize = vtTemp.size();
+			for (int k = 0; k < tempSize; k++)
+			{
+				resultValue += vtTemp.at(k)*GetNatureCalcCoefficient(m_vtComponent.at(k).GetComponentName()
+					,m_vtNature.at(i).GetNatureName(),vtTemp.at(k));
+			}
+
+			vtResult.at(j) = resultValue/100;
+		}
+		m_mapNatureResult.insert(make_pair(m_vtNature.at(i).GetNatureName(), vtResult));
+	}
+}
+
+
+//成功：没有找到返回false 有一个或多个符合返回true
+bool CNewCompositionOptimizationDlg::PreSelect(vector<int> &vtResultIndex)
+{
+	int size = m_vtComponentGrouping.size();
+	vtResultIndex.clear();
+	for (int i=0; i<size; i++)
+	{
+		vtResultIndex.push_back(i);//记录分组序号，符合条件的留下，不符合条件的删除
+	}
+
+	int NSize = m_vtNature.size();
+	float fValue;
+	vector<float> vtTempResult;
+
+	vector<int>::iterator itVt;
+	vector<int>::iterator itVtEnd;
+
+	for (int nIndex = 0; nIndex < NSize; nIndex++)
+	{
+		map<CString,vector<float>>::iterator itMap = m_mapNatureResult.find(m_vtNature.at(nIndex).GetNatureName());
+		if (itMap != m_mapNatureResult.end())
+		{
+			vtTempResult = itMap->second;
+			int sizeIndex = vtResultIndex.size();
+			for (int i=0; i<sizeIndex; i++)
+			{
+				fValue = vtTempResult.at(vtResultIndex.at(i));//取出对应的值
+				if(!(fValue >= m_vtNature.at(nIndex).GetVtNatureRange().front() && fValue <= m_vtNature.at(nIndex).GetVtNatureRange().back()))//不符合要求
+				{
+					//vtResultIndex中的不符合要求的索引赋值为-1
+					vtResultIndex.at(i) = -1;
+				}
+			}
+		}
+
+		//T清除为-1的索引值
+		/*itVt = vtResultIndex.begin();
+		itVtEnd = vtResultIndex.end();
+		for (; itVt != itVtEnd;)
+		{
+			if (-1 == *itVt)
+			{
+				itVt = vtResultIndex.erase(itVt);
+			}
+			else
+			{
+				itVt++;
+			}
+		}*/
+		itVt = vtResultIndex.begin();
+		for (int i = vtResultIndex.size()-1; i >= 0; i--)
+		{
+			if (-1 == vtResultIndex.at(i))
+			{
+				vtResultIndex.erase(itVt + i);
+			}
+		}
+
+	}
+
+	//如果符合要求的序号为0个返回假，即所有数据都被删除了
+	if (0 == vtResultIndex.size())
+	{
+		return false;
+	}
+	return true;
+}
+
+
+//提取初选结果
+void CNewCompositionOptimizationDlg::ExtractPreResult(vector<int> vtResultIndex)
+{
+	//先把需要进行精选的数据取出，放入m_afterPreResult和m_mapAfterPreResult中
+	//先取出组合的数据
+
+	vector<int>::iterator it = vtResultIndex.begin();
+	vector<int>::iterator itEnd = vtResultIndex.end();
+	vector<float> vtFloat;
+	for (; it!=itEnd; ++it)
+	{
+		vtFloat.clear();
+
+		vtFloat = m_vtComponentGrouping.at(*it);
+		m_afterPreResult.push_back(vtFloat);
+	}
+	//再取出数据计算出的结果
+	int NSize = m_vtNature.size();
+	map<CString,vector<float>>::iterator itMap;
+	for (int i = 0; i < NSize; i++)
+	{
+		itMap = m_mapNatureResult.find(m_vtNature.at(i).GetNatureName());
+		if (itMap != m_mapNatureResult.end())
+		{
+			vector<float> vt = itMap->second;
+
+			vector<int>::iterator it = vtResultIndex.begin();
+			vector<int>::iterator itEnd = vtResultIndex.end();
+			vtFloat.clear();
+			for (; it!=itEnd; ++it)
+			{
+				vtFloat.push_back(vt.at(*it));
+			}
+			m_mapAfterPreResult.insert(make_pair(m_vtNature.at(i).GetNatureName(), vtFloat));
 		}
 	}
 }
 
+//精选
+bool CNewCompositionOptimizationDlg::AccuSelect(vector<int> &vtResultIndex)
+{
+
+	//初选结果存储在m_afterPreResult和m_mapAfterPreResult中
+
+	//如果只有一个需要比较的性质，则选出最接近性质的一组并返回
+	if (1 == m_vtNature.size())
+	{
+		int index = 0;//记录是第几组为最值数据
+		vector<float> vt = m_mapAfterPreResult.begin()->second;//因为只有一个性质，所以直接取第一个
+		//ChoiceValue cv;
+		//cv = m_vtNature.at(0).GetChoiceValue();
+		if(LargeValue == m_vtNature.at(0).GetChoiceValue())//如果性质是取大值
+		{
+			//从这个计算出的性质结果的数组里面找出最大值即可
+			vector<float>::iterator itVt = vt.begin();
+			vector<float>::iterator itVtEnd = vt.end();
+			int pos = 0;
+			for (; itVt!=itVtEnd; ++itVt,++pos)
+			{
+				if (vt.at(index) < *itVt)
+				{
+					index = pos;
+				}
+			}
+		}
+		else if (SmallVaule == m_vtNature.at(0).GetChoiceValue())//如果性质是取小值
+		{
+			//从这个计算出的性质结果的数组里面找出最小值即可
+			vector<float>::iterator itVt = vt.begin();
+			vector<float>::iterator itVtEnd = vt.end();
+			int pos = 0;
+			for (; itVt!=itVtEnd; ++itVt, ++pos)
+			{
+				if (vt.at(index) > *itVt)
+				{
+					index = pos;
+				}
+			}
+		}
+		vtResultIndex.clear();
+		vtResultIndex.push_back(index);
+		return true;//返回找到的某一组数据的索引，在
+	}
+	//如果有两个或以上的比较性质，则使用正交法
+	else if (m_vtNature.size() > 1)
+	{
+		//一、计算Di值
+		vector<CNature>::iterator it = m_vtNature.begin();
+		vector<CNature>::iterator itEnd = m_vtNature.end();
+		int index = 0;//vector中的索引
+		CNature temp;
+		for (; it!=itEnd; ++it, ++index)
+		{
+			temp = m_vtNature.at(index);
+			float diff = temp.GetVtNatureRange().back() - temp.GetVtNatureRange().front();//大值减小值
+			if(LargeValue == temp.GetChoiceValue())//如果是大值
+			{
+				map<CString,vector<float>>::iterator itMap = m_mapAfterPreResult.find(it->GetNatureName());
+				if (itMap != m_mapAfterPreResult.end())
+				{
+					vector<float> vtFloat = itMap->second;
+					vector<float> vtResult;//存放计算结果
+					UINT vectorNumber = vtFloat.size();
+					for (UINT i=0; i<vectorNumber; i++)
+					{
+						vtResult.push_back((temp.GetVtNatureRange().back() - vtFloat.at(i))/diff);//减去大值  Di=( Ymax- Yi)/(Ymax-Ymin)
+					}
+					m_mapAfterPreResultDi.insert(make_pair(it->GetNatureName(), vtResult));
+				}
+			}
+			else if (SmallVaule == temp.GetChoiceValue())//如果是小值
+			{
+				map<CString,vector<float>>::iterator itMap = m_mapAfterPreResult.find(it->GetNatureName());
+				if (itMap != m_mapAfterPreResult.end())
+				{
+					vector<float> vtFloat = itMap->second;
+					vector<float> vtResult;//存放计算结果
+					UINT vectorNumber = vtFloat.size();
+					for (UINT i=0; i<vectorNumber; i++)
+					{
+						vtResult.push_back((vtFloat.at(i) - temp.GetVtNatureRange().front())/diff);//减去小值 Di=(Yi-Ymin)/(Ymax-Ymin)
+				}
+					m_mapAfterPreResultDi.insert(make_pair(it->GetNatureName(), vtResult));
+				}
+			}
+		}//Di计算完毕
+
+
+		//二、计算综合得分
+		UINT groupNumber = m_afterPreResult.size();//初选后的组数
+		UINT k = groupNumber;//k值即为组数
+		vector<float> comprehensiveScore(groupNumber, 1);//综合得分数组
+		//计算方法为把得到的Di结果从头到尾遍历一遍，然后使用综合得分数组与每一个性质的数据相乘，最后再开k次方
+		vector<CNature>::iterator itVt = m_vtNature.begin();
+		vector<CNature>::iterator itVtEnd = m_vtNature.end();
+
+
+		map<CString,vector<float>>::iterator itDiMapEnd = m_mapAfterPreResultDi.end();
+		for (; itVt!=itVtEnd; ++itVt)
+		{
+			map<CString, vector<float>>::iterator itDiMap = m_mapAfterPreResult.find(itVt->GetNatureName());
+			if (itDiMap != m_mapAfterPreResult.end())
+			{
+				vector<float> vtFloat = itDiMap->second;
+				UINT size = vtFloat.size();
+				for (UINT i=0; i<size; i++)
+				{
+					comprehensiveScore.at(i) = comprehensiveScore.at(i)*vtFloat.at(i);
+				}
+			}
+		}
+		//开k次放
+		float squareValue = 1.0/k;
+		for (UINT i=0; i<groupNumber; i++)
+		{
+			comprehensiveScore.at(i) = pow(comprehensiveScore.at(i), squareValue);
+		}
+		//三、计算T值
+		//为了方便计算，把算出的综合得分放入，筛选过后的数组的最后一个  如 第一组为 7 1 3 6 1.3604312
+		//															第二组为 7 1 4 5 1.3456212
+		//																		...
+		for (UINT i=0; i<groupNumber; i++)
+		{
+			m_afterPreResult.at(i).push_back(comprehensiveScore.at(i));
+		}
+
+		vector<float> finalResult;
+		CalculateFinallyGroup(m_afterPreResult, finalResult);//计算最终的数组值，包括计算T值，筛选分组
+		//算出最终数组后，再把综合得分取出
+		groupNumber = m_afterPreResult.size();//初选后的组数
+		for (UINT i=0; i<groupNumber; i++)
+		{
+			m_afterPreResult.at(i).erase(m_afterPreResult.at(i).begin() + m_vtComponent.size());//去掉综合得分
+		}
+
+		//四、性质反算
+		//判断初选数组里是否存在最终算出的数组，有则返回索引值和true，没有则返回false
+		vector<vector<float>>::iterator itVt2 = m_afterPreResult.begin();
+		vector<vector<float>>::iterator itVt2End = m_afterPreResult.end();
+		bool flag = false;
+		int pos = 0;
+		for (; itVt2!=itVt2End; ++itVt2, ++pos)
+		{
+			int count = 1;
+			int compositionNumber = (*itVt2).size();
+			for (int i=0; i<compositionNumber; i++)
+			{
+				if ((*itVt2).at(i) != finalResult.at(i))//只要有不相等的则退出循环，比较下一组
+				{
+					break;
+				}
+				else
+				{
+					count++;
+					if (count == compositionNumber)//如果比较完所有的数据都相等，则返回true和索引
+					{
+						flag = true;
+						vtResultIndex.clear();
+						vtResultIndex.push_back(pos);
+						return true;
+					}
+				}
+			}
+		}
+
+		//五、返回结果
+	}
+	return false;
+
+}
+
+
+//计算最终的数组值，包括计算T值，筛选分组
+void CNewCompositionOptimizationDlg::CalculateFinallyGroup(const vector<vector<float>> &m_preResult, vector<float> &ReturnResult)
+{
+	int compositionNumber = m_vtComponent.size();//组分个数
+	vector<vector<float>> copyResult;
+	for (int i = 0; i < compositionNumber; i++)
+	{
+		//计算第i个物质，如第1个为SiO2
+		copyResult=m_preResult;
+		vector<vector<float>>::iterator itVt2 = copyResult.begin();
+		vector<vector<float>>::iterator itCompare;
+		map<float,float> mapFloat2;
+		mapFloat2.clear();
+		for(; itVt2 != copyResult.end(); ++itVt2)
+		{
+			float compareValue = (*itVt2).at(i);
+			itCompare = itVt2;
+			int count = 1;
+			float comprehensiveScore = (*itVt2).back();//综合得分
+			++itCompare;
+			while (itCompare != copyResult.end())
+			{
+				if (compareValue == (*itCompare).at(i))
+				{
+					count++;
+					comprehensiveScore += (*itCompare).back();
+					itCompare = copyResult.erase(itCompare);//把已经计算过的数据清理掉
+				}
+				else
+				{
+					++itCompare;
+				}
+			}
+			comprehensiveScore = comprehensiveScore/count;//计算出综合得分
+			mapFloat2.insert(make_pair(compareValue, comprehensiveScore));
+		}
+		//取出最大值对应的数据
+		map<float, float>::iterator itMap = mapFloat2.begin();
+		map<float, float>::iterator itMapEnd = mapFloat2.end();
+		//先假设第一个值为最大值
+		float maxKey = itMap->first;
+		float maxValue = itMap->second;
+		//然后与后面的值比较，取出
+		++itMap;
+		for (; itMap != itMapEnd; ++itMap)
+		{
+			if (itMap->second > maxValue)
+			{
+				maxKey = itMap->first;
+				maxValue = itMap->second;
+			}
+		}
+		//推入返回数组中
+		ReturnResult.push_back(maxKey);
+	}
+}
+
+
+void CNewCompositionOptimizationDlg::Display(vector<vector<float>> &result, map<CString, vector<float>> &mapResult, int resultIndex)
+{
+	vector<float> vtResult = result.at(resultIndex);
+	int pos = 1;
+	CString str;
+
+	int iSize = vtResult.size();
+	for (int i = 0; i < iSize; i++)
+	{
+		str.Format(_T("%g"), vtResult.at(i));
+		m_ResultList.SetItemText(0, pos++, str);
+	}
+	//显示最优组分得到的结果
+	int NSize = m_vtNature.size();
+	for (int i = 0; i < NSize; i++)
+	{
+		map<CString, vector<float>>::iterator itMap = mapResult.find(m_vtNature.at(i).GetNatureName());
+		if (itMap != mapResult.end())
+		{
+			vector<float> vtf = itMap->second;
+			str.Format(_T("%g"), vtf.at(resultIndex));
+			m_ResultList.SetItemText(0, pos++, str);
+		}
+	}
+}
+
+
+//计算数据清理，为下一次优选做准备
+void CNewCompositionOptimizationDlg::ClearData(bool bClearAll/* =false */)
+{
+	m_vtComponentGrouping.clear();
+	m_mapNatureResult.clear();
+	m_afterPreResult.clear();
+	m_mapAfterPreResult.clear();
+	m_mapAfterPreResultDi.clear();
+	if (bClearAll)
+	{
+		m_vtComponent.clear();
+		m_vtNature.clear();
+		UpDateComponetList();
+		UpDateNatureList();
+	}
+}
+
+//开始进行优选
 void CNewCompositionOptimizationDlg::OnBnClickedBtnStartOptimization()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	if (m_bIsSelectComponent && m_bIsSelectNature)
+	//T判断输入是否符合要求
+	if (!JudgmentInput())
 	{
-		//有任意列表没有数据，则退出
-		if (m_vtComponent.empty())
+		return;
+	}
+	//二、开始计算
+	CalculateNature();
+
+	//所有结果都计算出来了，并存放在了m_mapNatureResult中
+	//三、筛选组成
+	//3.1初步筛选
+	vector<int> vt;//存储了符合要求的序号
+	if (PreSelect(vt))//如果初步筛选成功，则显示结果并退出
+	{
+		if (1 == vt.size())
 		{
-			MessageBox(_T("没有输入组分！"));
-			return;
+			Display(m_vtComponentGrouping, m_mapNatureResult, vt.front());
+			ClearData();
+			MessageBox(_T("初选后成功找到！"),DlgTitle);
 		}
-		if (m_vtNature.empty())
+		else if (vt.size()>1)//否则进行精选
 		{
-			MessageBox(_T("没有输入性质！"));
-			return;
+			//3.2精选结果
+			//调用函数使初选结果存储在m_afterPreResult和m_mapAfterPreResult中
+			//只有需要精选时才需要调用此函数
+			ExtractPreResult(vt);
+
+			if (AccuSelect(vt))
+			{
+
+				//显示最优的组分
+				Display(m_afterPreResult, m_mapAfterPreResult, vt.front());
+				ClearData();
+				MessageBox(_T("精选后成功找到！"),DlgTitle);
+			}
+			else
+			{
+				ClearData();
+				MessageBox(_T("精选后无结果！"),DlgTitle);	
+			}
 		}
-		//清理输出结果列表
-		UpDateResultList();
-		//三、开始计算
-		CalculateNature();
-	//T从组分表格中获取组分名及其取值范围
-	//T从性质表格中获取性质名及其取值范围
-	//T对数据进行处理
-
-	//T计算
-
-	//T进行初选
-
-	//T进行精选
-
-	//T结果显示
 	}
-	else if (!m_bIsSelectComponent)
+	else
 	{
-		MessageBox(_T("请先选择组分！"));
+		ClearData();
+		MessageBox(_T("初选后无结果！"),DlgTitle);
 	}
-	else if (!m_bIsSelectNature)
-	{
-		MessageBox(_T("请先选择性质！"));
-	}
+
+	
 }
 
 
@@ -659,8 +1089,20 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnSelectComponent()
 	// TODO: 在此添加控件通知处理程序代码
 	//把打钩的复选框，写入组分表格中
 	m_vtComponent.clear();
-	m_bIsSelectComponent = GetSelectCheckBox(_T("Component"));
+	bool rt = GetSelectCheckBox(_T("Component"));
 	UpDateComponetList();
+	if (rt)
+	{
+		/*把对话框设置到第一个*/
+		NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
+		pNMListView->iItem = 0;
+		pNMListView->iSubItem = 2;
+
+		NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
+		LRESULT pResult = 0;
+		OnNMDblclkListComponent(pNMHDR,&pResult);
+		delete pNMListView;
+	}
 }
 
 
@@ -668,8 +1110,20 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnSelectNature()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	m_vtNature.clear();
-	m_bIsSelectNature = GetSelectCheckBox(_T("Nature"));
+	bool rt = GetSelectCheckBox(_T("Nature"));
 	UpDateNatureList();
+	if (rt)
+	{
+		/*把对话框设置到第一个*/
+		NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
+		pNMListView->iItem = 0;
+		pNMListView->iSubItem = 2;
+
+		NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
+		LRESULT pResult = 0;
+		OnNMDblclkListNature(pNMHDR,&pResult);
+		delete pNMListView;
+	}
 }
 
 
@@ -683,13 +1137,13 @@ void CNewCompositionOptimizationDlg::OnNMDblclkListComponent(NMHDR *pNMHDR, LRES
 	{
 		m_row = pNMListView->iItem;							//m_row为被选中行的行序号（int类型成员变量）
 		m_column = pNMListView->iSubItem;						//m_column为被选中行的列序号（int类型成员变量）
-		m_ComponentList.GetSubItemRect(pNMListView->iItem, pNMListView->iSubItem, LVIR_LABEL, rc);//取得子项的矩形
+		m_ComponentList.GetSubItemRect(m_row, m_column, LVIR_LABEL, rc);//取得子项的矩形
 
 		rc.bottom += 3;
 
 		m_inputComEdit.SetParent(&m_ComponentList);
 		PTSTR ch=new TCHAR[20];
-		m_ComponentList.GetItemText(pNMListView->iItem, pNMListView->iSubItem, ch, 20);//取得子项的内容
+		m_ComponentList.GetItemText(m_row, m_column, ch, 20);//取得子项的内容
 		m_inputComEdit.SetWindowText(ch);					//将子项的内容显示到编辑框中
 		m_inputComEdit.ShowWindow(SW_SHOW);					//显示编辑框
 		m_inputComEdit.MoveWindow(&rc);						//将编辑框移动到子项上面，覆盖在子项上
@@ -754,4 +1208,63 @@ void CNewCompositionOptimizationDlg::OnEnKillfocusEdit2()
 	//T把字符串设置到性质数组中,函数内部解析字符串，并存储到范围数组中
 	m_vtNature.at(m_row).SetStrNatureRange(str);
 	m_inputNatureEdit.ShowWindow(SW_HIDE);//隐藏编辑框
+}
+
+
+void CNewCompositionOptimizationDlg::OnBnClickedBtnClear()
+{
+	// TODO: Add your control notification handler code here
+	ClearData(true);
+}
+
+
+BOOL CNewCompositionOptimizationDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: Add your specialized code here and/or call the base class
+	if (pMsg->message == WM_KEYDOWN)  
+	{  
+		switch (pMsg->wParam)  
+		{  
+		case VK_TAB:  
+	 
+			CWnd *pWnd = GetFocus(); 
+			if(pWnd == NULL)
+				;//no focus
+			else
+			{
+				UINT nID = pWnd->GetDlgCtrlID();
+				if (IDC_EDIT1 == nID)//如果是组分表
+				{
+					NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
+					if (m_row+1 < m_vtComponent.size())
+					{
+						pNMListView->iItem = m_row+1;
+					}
+					pNMListView->iSubItem = 2;
+
+					NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
+					LRESULT pResult = 0;
+					OnNMDblclkListComponent(pNMHDR,&pResult);
+					delete pNMListView;
+				}
+				else if (IDC_EDIT2 == nID)//性质表
+				{
+					NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
+					if (m_row+1 < m_vtNature.size())
+					{
+						pNMListView->iItem = m_row+1;
+					}
+					pNMListView->iSubItem = 2;
+
+					NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
+					LRESULT pResult = 0;
+					OnNMDblclkListNature(pNMHDR,&pResult);
+					delete pNMListView;
+				}
+			}
+			
+			return TRUE;  
+		}  
+	}  
+	return CDialogEx::PreTranslateMessage(pMsg);
 }
