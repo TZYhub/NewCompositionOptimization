@@ -362,21 +362,21 @@ void CNewCompositionOptimizationDlg::LoadVtStrFromIni(vector<CString> &vtStr,con
 
 
 //写数据到配置文件中WritePrivateProfileString
-void CNewCompositionOptimizationDlg::WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr)
+void CNewCompositionOptimizationDlg::WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr, const CString& strPath)
 {
 	CString strWrite = _T("");
-	CString des = _T("");
+	/*CString des = _T("");
 	::GetCurrentDirectory(MAX_PATH, des.GetBuffer(MAX_PATH));
 	des.ReleaseBuffer();
-	des += "\\export.ini";
+	des += "\\export.ini";*/
 	int nCount = vtStr.size();
 	strWrite.Format(_T("%d"),nCount);
-	WritePrivateProfileString(keyStr,_T("nCount"),strWrite,des);
+	WritePrivateProfileString(keyStr,_T("nCount"),strWrite,strPath);
  	TCHAR ch[50];
  	for (int i = 1; i <= nCount; i++)
  	{
  		_itot_s(i, ch, _countof(ch), 10);
-		WritePrivateProfileString(keyStr,ch,vtStr.at(i-1),des);
+		WritePrivateProfileString(keyStr,ch,vtStr.at(i-1),strPath);
  		strWrite.ReleaseBuffer();
  	}
 }
@@ -1324,10 +1324,19 @@ void CNewCompositionOptimizationDlg::OnBnClickedBinImport()
 	//清理数据
 	ClearData(true);
 	//T选择文件夹
-	CString strPath;
-	::GetCurrentDirectory(MAX_PATH, strPath.GetBuffer(MAX_PATH));
-	strPath.ReleaseBuffer();
-	strPath += "\\export.ini";
+	CString strFilter, fileName;
+	CFileDialog dlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("All Files|*.ini|*.ini||"), AfxGetMainWnd());//构造文件另存为对话框
+	CString strPath;//声明变量
+	if (dlg.DoModal() == IDOK)//判断是否按下"保存"按钮
+	{
+		strPath = dlg.GetPathName();//获得文件保存路径
+		if (strPath == _T(""))
+		{
+			MessageBox(_T("请选择路径"),DlgTitle);
+			return;
+		}
+	}
 	//T读取数据
 	vector<CString> vtRead;
 	LoadVtStrFromIni(vtRead,_T("组分"),strPath);
@@ -1352,9 +1361,6 @@ void CNewCompositionOptimizationDlg::OnBnClickedBinImport()
 				((CButton*)GetDlgItem(i))->SetCheck(1);
 			}
 		}
-
-
-
 		componet.SetComponentName(strName);
 		componet.SetStrComponentRange(strRange);
 		m_vtComponent.push_back(componet);
@@ -1390,11 +1396,8 @@ void CNewCompositionOptimizationDlg::OnBnClickedBinImport()
 	}
 	UpdateComponetList();
 	UpdateNatureList();
-	
-
 	//T标题显示为某某导入文件
-	
-
+	SetWindowText(_T("组分优选导入文件   ")+strPath);
 }
 
 
@@ -1405,7 +1408,18 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnExport()
 	if (!JudgmentInput())
 		return;
 	//T2获取导出路径，文件名由用户取
-
+	CString strFilter, fileName;
+	CFileDialog dlg(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("All Files|*.ini|*.ini||"), AfxGetMainWnd());//构造文件另存为对话框
+	CString strPath;//声明变量
+	if (dlg.DoModal() == IDOK)//判断是否按下"保存"按钮
+	{
+		strPath = dlg.GetPathName();//获得文件保存路径
+		if (strPath.Right(4) != ".ini")//判断文件扩展名
+		{
+			strPath += ".ini";//设置文件扩展名
+		}
+	}
 	//T3导出数据
 	//导出文件格式为 .ini  [组分]
 	//						nCount=1
@@ -1421,7 +1435,7 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnExport()
 	{
 		vtStrWrite.push_back(m_vtComponent.at(i).GetComponentName()+_T(",")+m_vtComponent.at(i).GetStrComponentRange());
 	}
-	WriteStrToIni(vtStrWrite,_T("组分"));
+	WriteStrToIni(vtStrWrite,_T("组分"),strPath);
 	//T写入性质
 	vtStrWrite.clear();
 	int NSize = m_vtNature.size();
@@ -1429,7 +1443,6 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnExport()
 	{
 		vtStrWrite.push_back(m_vtNature.at(i).GetNatureName()+_T(",")+m_vtNature.at(i).GetStrNatureRange());
 	}
-	WriteStrToIni(vtStrWrite,_T("性质"));
+	WriteStrToIni(vtStrWrite,_T("性质"),strPath);
 	MessageBox(_T("导出成功！"),DlgTitle);
-	
 }

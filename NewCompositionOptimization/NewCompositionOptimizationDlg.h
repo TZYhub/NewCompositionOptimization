@@ -47,7 +47,7 @@ protected:
 	void LoadFixeCalcCoe();								//T加载固定性质系数
 	void LoadNatureChoiceValue();						//T加载性质极大值和极小值
 	void LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr, const CString& strPath = _T(""));	//从配置文件中获取字符串数据
-	void WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr);//写数据到配置文件中
+	void WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr, const CString& strPath);//写数据到配置文件中
 
 	void UpdateComponetList();							//当组分数组有改动时，调用该函数重新显示
 	void UpdateNatureList();							//当性质数组有改动时，调用该函数重新显示
