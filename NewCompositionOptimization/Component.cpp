@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "Component.h"
 
+map<CString, float> CComponent::m_ComponentFixedValue = map<CString, float>();
 
 CComponent::CComponent(void)
 {
@@ -11,6 +12,13 @@ CComponent::~CComponent(void)
 {
 }
 
+void CComponent::SetComponentFixedValue(const map<CString, float>& mapFixedValue)
+{
+	if (!mapFixedValue.empty())
+	{
+		m_ComponentFixedValue = mapFixedValue;
+	}
+}
 
 void CComponent::SetComponentName(const CString& cName)
 {
@@ -43,6 +51,16 @@ void CComponent::SetStrComponentRange(const CString& sRange)
 		m_vtComponentRange.push_back(a);
 		m_vtComponentRange.push_back(b);
 	}
+	//T最后除以固定系数，得到最终存储的值
+	int iSize = m_vtComponentRange.size();
+	float fixedValue = FindFixedValue();
+	if (fixedValue > 0.0000001 || fixedValue < -0.0000001)//T获取值不为0
+	{
+		for (int i = 0; i < iSize; i++)
+		{
+			m_vtComponentRange.at(i) /= fixedValue;//每一个截取值都除以固定系数，并保存
+		}
+	}
 }
 
 void CComponent::CStringToFloat(CString str, float &a, float &b, bool bNeedSort/*=true*/)
@@ -62,4 +80,14 @@ void CComponent::CStringToFloat(CString str, float &a, float &b, bool bNeedSort/
 			b = t;
 		}
 	}
+}
+
+float CComponent::FindFixedValue()
+{
+	map<CString, float>::iterator itMap = m_ComponentFixedValue.find(m_ComponentName);
+	if (itMap != m_ComponentFixedValue.end())
+	{
+		return itMap->second;
+	}
+	return 0;
 }

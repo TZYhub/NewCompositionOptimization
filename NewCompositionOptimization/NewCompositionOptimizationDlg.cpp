@@ -118,6 +118,7 @@ BOOL CNewCompositionOptimizationDlg::OnInitDialog()
 	Init();
 	LoadFixeCalcCoe();
 	LoadNatureChoiceValue();
+	LoadComponentFixedValue();
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -324,6 +325,29 @@ void CNewCompositionOptimizationDlg::LoadNatureChoiceValue()
 	}
 }
 
+//T从配置文件中获取组分截取值除的固定系数
+void CNewCompositionOptimizationDlg::LoadComponentFixedValue()
+{
+	//1.从配置文件中获取固定性质系数
+	map<CString, float> mapFixedValue;
+	vector<CString> vtCString;
+	LoadVtStrFromIni(vtCString, _T("组分固定系数"));
+	UINT iSize = vtCString.size();
+	int a = 0;
+	CString strNatureName;
+	CString strFixedValue;
+	float fixedValue;
+	for (UINT i = 0; i < iSize; i++)
+	{
+		a = vtCString.at(i).Find(',');
+		strNatureName = vtCString.at(i).Left(a);//1.取出逗号前的组分名
+		strFixedValue = vtCString.at(i).Right(vtCString.at(i).GetLength() - a - 1);//2.取出固定系数的值
+		fixedValue = _ttof(strFixedValue);
+		mapFixedValue.insert(make_pair(strNatureName, fixedValue));//T推入映射中
+	}
+	CComponent::SetComponentFixedValue(mapFixedValue);//T赋值给组分类
+}
+
 //从配置文件中获取字符串数据
 void CNewCompositionOptimizationDlg::LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr, const CString& strPath /*= ""*/)
 {
@@ -365,10 +389,6 @@ void CNewCompositionOptimizationDlg::LoadVtStrFromIni(vector<CString> &vtStr,con
 void CNewCompositionOptimizationDlg::WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr, const CString& strPath)
 {
 	CString strWrite = _T("");
-	/*CString des = _T("");
-	::GetCurrentDirectory(MAX_PATH, des.GetBuffer(MAX_PATH));
-	des.ReleaseBuffer();
-	des += "\\export.ini";*/
 	int nCount = vtStr.size();
 	strWrite.Format(_T("%d"),nCount);
 	WritePrivateProfileString(keyStr,_T("nCount"),strWrite,strPath);
@@ -525,7 +545,7 @@ BOOL CNewCompositionOptimizationDlg::GetSelectCheckBox(const CString& str)
 	CNature nature;
 	CString strValue;
 
-	for(int i = iStartID; i < iEndID; i++)
+	for(int i = iStartID; i <= iEndID; i++)
 	{
 		if (((CButton*)GetDlgItem(i))->GetCheck())//判断复选框是否选中
 		{
@@ -602,7 +622,10 @@ void CNewCompositionOptimizationDlg::CalculateNature()
 	//T1、先把组分截断数组进行组合
 	CombinationTruncationData();
 
-	//T2、根据组合中每种组分的含量来获取不同性质的计算系数,并计算出结果，存放在m_mapNatureResult中
+	//T2、第二步：求和并计算出要使用的百分比
+	CalculateComponentPercentage();
+
+	//T3、根据组合中每种组分的含量来获取不同性质的计算系数,并计算出结果，存放在m_mapNatureResult中
 	CalculateEachGroupNature();
 }
 
@@ -648,6 +671,30 @@ void CNewCompositionOptimizationDlg::CombinationTruncationData()
 		Calculate(1, vtSub);
 	}
 }
+
+//T求和并计算出组分百分比
+void CNewCompositionOptimizationDlg::CalculateComponentPercentage()
+{
+	int iSize = m_vtComponentGrouping.size();
+	int subSize = -1;
+	float sumValue = 0;
+	vector<float> vtGroup;//T每一组组合
+	for (int i = 0; i < iSize; i++)
+	{
+		subSize = m_vtComponentGrouping.at(i).size();
+		//T求一组的和
+		for (int j = 0; j < subSize; j++)
+		{
+			sumValue += m_vtComponentGrouping.at(i).at(j);
+		}
+		//T求一组的百分比
+		for (int j = 0; j < subSize; j++)
+		{
+			m_vtComponentGrouping.at(i).at(j) /= (sumValue * 100);
+		}
+	}
+}
+
 
 //T计算每一组对应的性质
 void CNewCompositionOptimizationDlg::CalculateEachGroupNature()

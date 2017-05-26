@@ -16,7 +16,7 @@ public:
 
 protected:
 	void CStringToFloat(CString str,float &a,float &b,bool bNeedSort=true);//字符串解析为浮点 如“1-2”，a=1.0,b=2.0;
-	float FindFixedValue();
+	float FindFixedValue();//从m_ComponentFixedValue找到组分对应的固定系数值
 protected:
 	CString m_ComponentName;//T组分名
 	CString m_strRange;//T取值范围的字符串

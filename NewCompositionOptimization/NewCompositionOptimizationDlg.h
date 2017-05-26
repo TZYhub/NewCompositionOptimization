@@ -25,6 +25,7 @@ protected:
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
@@ -36,6 +37,9 @@ protected:
 	afx_msg void OnEnKillfocusEdit1();
 	afx_msg void OnNMDblclkListNature(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnEnKillfocusEdit2();
+	afx_msg void OnBnClickedBtnClear();
+	afx_msg void OnBnClickedBinImport();
+	afx_msg void OnBnClickedBtnExport();
 	DECLARE_MESSAGE_MAP()
 
 
@@ -46,6 +50,7 @@ protected:
 	void InitResultList();								//初始化结果列表
 	void LoadFixeCalcCoe();								//T加载固定性质系数
 	void LoadNatureChoiceValue();						//T加载性质极大值和极小值
+	void LoadComponentFixedValue();						//T从配置文件中获取组分截取值除的固定系数
 	void LoadVtStrFromIni(vector<CString> &vtStr,const CString& keyStr, const CString& strPath = _T(""));	//从配置文件中获取字符串数据
 	void WriteStrToIni(const vector<CString>& vtStr, const CString& keyStr, const CString& strPath);//写数据到配置文件中
 
@@ -67,6 +72,7 @@ protected:
 
 	void CalculateNature();
 	void CombinationTruncationData();					//T组合截断组分数据
+	void CalculateComponentPercentage();				//T求和并计算出组分百分比
 	void CalculateEachGroupNature();					//T计算每一组对应的性质
 	void Calculate(map<int,vector<float>>::iterator itMap);
 	void Calculate(const int index, vector<float> &vt);
@@ -102,8 +108,5 @@ public:
 
 	int m_row;											//鼠标双击列表选中的行
 	int m_column;										//鼠标双击列表选中的列
-	afx_msg void OnBnClickedBtnClear();
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	afx_msg void OnBnClickedBinImport();
-	afx_msg void OnBnClickedBtnExport();
+	
 };
