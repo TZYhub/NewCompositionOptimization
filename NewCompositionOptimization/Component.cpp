@@ -39,20 +39,21 @@ void CComponent::SetStrComponentRange(const CString& sRange)
 		//T解析输入的范围，并存储到数组中
 		float a;
 		float b;
-		m_vtComponentRange.clear();
+		m_vtBeforeCalcRange.clear();
 		//二、转换为浮点值,由字符串解析为浮点数
 		CStringToFloat(m_strRange, a, b);
 		//三、按加1截断，存放到map中
 		while (a + 1 < b)//做此判断的前提：确认b比a要大，这个应该在输入时做处理
 		{
-			m_vtComponentRange.push_back(a);
+			m_vtBeforeCalcRange.push_back(a);
 			a++;
 		}
-		m_vtComponentRange.push_back(a);
-		m_vtComponentRange.push_back(b);
+		m_vtBeforeCalcRange.push_back(a);
+		m_vtBeforeCalcRange.push_back(b);
 	}
-	//T最后除以固定系数，得到最终存储的值
-	int iSize = m_vtComponentRange.size();
+	//T最后除以固定系数，得到计算时存储的值
+	int iSize = m_vtBeforeCalcRange.size();
+	m_vtComponentRange = m_vtBeforeCalcRange;
 	float fixedValue = FindFixedValue();
 	if (fixedValue > 0.0000001 || fixedValue < -0.0000001)//T获取值不为0
 	{
@@ -62,6 +63,23 @@ void CComponent::SetStrComponentRange(const CString& sRange)
 		}
 	}
 }
+
+//T使用计算后的值来查找计算前的截断值，用于显示
+float CComponent::GetBeforeRangeValue(const float afterCalcValue)
+{
+	int iSize = m_vtComponentRange.size();
+	for (int i = 0; i < iSize; i++)
+	{
+		if (m_vtComponentRange.at(i) - afterCalcValue > 0.0000001
+			&& afterCalcValue - m_vtComponentRange.at(i) > -0.0000001  )//T即两值相等
+		{
+			return m_vtBeforeCalcRange.at(i);
+		}
+	}
+	return -1;
+}
+
+
 
 void CComponent::CStringToFloat(CString str, float &a, float &b, bool bNeedSort/*=true*/)
 {

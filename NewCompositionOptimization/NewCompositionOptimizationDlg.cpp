@@ -682,12 +682,12 @@ void CNewCompositionOptimizationDlg::CalculateComponentPercentage()
 	for (int i = 0; i < iSize; i++)
 	{
 		subSize = m_vtComponentGrouping.at(i).size();
-		//T求一组的和
+		//T求i组的和
 		for (int j = 0; j < subSize; j++)
 		{
 			sumValue += m_vtComponentGrouping.at(i).at(j);
 		}
-		//T求一组的百分比
+		//T求i组的百分比
 		for (int j = 0; j < subSize; j++)
 		{
 			m_vtComponentGrouping.at(i).at(j) /= (sumValue * 100);
@@ -761,19 +761,6 @@ bool CNewCompositionOptimizationDlg::PreSelect(vector<int> &vtResultIndex)
 		}
 
 		//T清除为-1的索引值
-		/*itVt = vtResultIndex.begin();
-		itVtEnd = vtResultIndex.end();
-		for (; itVt != itVtEnd;)
-		{
-			if (-1 == *itVt)
-			{
-				itVt = vtResultIndex.erase(itVt);
-			}
-			else
-			{
-				itVt++;
-			}
-		}*/
 		itVt = vtResultIndex.begin();
 		for (int i = vtResultIndex.size()-1; i >= 0; i--)
 		{
@@ -1066,11 +1053,16 @@ void CNewCompositionOptimizationDlg::CalculateFinallyGroup(const vector<vector<f
 
 void CNewCompositionOptimizationDlg::Display(vector<vector<float>> &result, map<CString, vector<float>> &mapResult, int resultIndex)
 {
-	vector<float> vtResult = result.at(resultIndex);
 	int pos = 1;
 	CString str;
-
+	vector<float> vtResult = result.at(resultIndex);
 	int iSize = vtResult.size();
+	//T这里应该获取 每个性质未计算的截取值
+	for (int i = 0; i < iSize; i++)
+	{
+		vtResult.at(i) = m_vtComponent.at(i).GetBeforeRangeValue(vtResult.at(i));
+	}
+	
 	for (int i = 0; i < iSize; i++)
 	{
 		str.Format(_T("%g"), vtResult.at(i));
