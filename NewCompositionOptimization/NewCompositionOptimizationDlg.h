@@ -101,6 +101,7 @@ public:
 	map<CString, vector<float>> m_mapNatureResult;		//T根据截段组分%和组分系数 计算性质结果
 														//T如 ： 密度，at(1)=0.93 at(2)=1.2 at(3)=1.3
 
+	vector<vector<float>> m_vtComponentGroupingBefore;	//T性质分组结果，即根据截段数据进行组合的数组,仅用于显示处理部分
 	vector<vector<float>> m_vtComponentGrouping;		//T性质分组结果，即根据截段数据进行组合的数组
 	vector<vector<float>> m_afterPreResult;				//初选之后从m_vtComponentGrouping中选出的满足条件的截断组分组合，需要进行精选，
 	map<CString,vector<float>> m_mapAfterPreResult;		//初选之后的结果，即通过满足条件组合计算出来的结果

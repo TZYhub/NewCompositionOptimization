@@ -492,6 +492,7 @@ float CNewCompositionOptimizationDlg::GetNatureCalcCoefficient(const CString& cN
 	if (!rt)//T如果固定值中没有，则使用公式计算
 	{
 		coeValue = GetNatureCalcCoeWithFormula(cName, nName, cValue);
+		coeValue = 1;
 	}
 	return coeValue;
 }
@@ -646,7 +647,7 @@ void CNewCompositionOptimizationDlg::Calculate(const int index, vector<float> &v
 	}
 	else//是最后一个
 	{
-		m_vtComponentGrouping.push_back(vtSub);
+		m_vtComponentGroupingBefore.push_back(vtSub);
 	}
 	
 }
@@ -654,7 +655,8 @@ void CNewCompositionOptimizationDlg::Calculate(const int index, vector<float> &v
 //T组合截断组分数据
 void CNewCompositionOptimizationDlg::CombinationTruncationData()
 {
-	m_vtComponentGrouping.clear();//清理上一次数据
+	m_vtComponentGroupingBefore.clear();//清理上一次数据
+	m_vtComponentGrouping.clear();
 	int typeNumber = m_vtComponent.size();//有多少种物质
 	vector<float> vtSub(typeNumber);
 	//调用递归函数实现循环，实现分组
@@ -670,6 +672,7 @@ void CNewCompositionOptimizationDlg::CombinationTruncationData()
 		vtSub.at(0) = vt.at(i);
 		Calculate(1, vtSub);
 	}
+	m_vtComponentGrouping = m_vtComponentGroupingBefore;
 }
 
 //T求和并计算出组分百分比
@@ -681,6 +684,7 @@ void CNewCompositionOptimizationDlg::CalculateComponentPercentage()
 	vector<float> vtGroup;//T每一组组合
 	for (int i = 0; i < iSize; i++)
 	{
+		sumValue = 0;
 		subSize = m_vtComponentGrouping.at(i).size();
 		//T求i组的和
 		for (int j = 0; j < subSize; j++)
@@ -690,7 +694,8 @@ void CNewCompositionOptimizationDlg::CalculateComponentPercentage()
 		//T求i组的百分比
 		for (int j = 0; j < subSize; j++)
 		{
-			m_vtComponentGrouping.at(i).at(j) /= (sumValue * 100);
+			//m_vtComponentGrouping.at(i).at(j) /= (sumValue * 100);
+			m_vtComponentGrouping.at(i).at(j) = (m_vtComponentGrouping.at(i).at(j)/sumValue) * 100;
 		}
 	}
 }
@@ -707,9 +712,11 @@ void CNewCompositionOptimizationDlg::CalculateEachGroupNature()
 	float resultValue = 0;
 	for (int i = 0; i < NSize; i++)
 	{
+		
 		for (int j = 0; j < groupSize; j++)
 		{
 			//获得截断分组的值，及组分的含量
+			resultValue = 0;
 			vtTemp = m_vtComponentGrouping.at(j);
 			tempSize = vtTemp.size();
 			for (int k = 0; k < tempSize; k++)
@@ -1055,7 +1062,8 @@ void CNewCompositionOptimizationDlg::Display(vector<vector<float>> &result, map<
 {
 	int pos = 1;
 	CString str;
-	vector<float> vtResult = result.at(resultIndex);
+	//vector<float> vtResult = result.at(resultIndex);
+	vector<float> vtResult = m_vtComponentGroupingBefore.at(resultIndex);
 	int iSize = vtResult.size();
 	//T这里应该获取 每个性质未计算的截取值
 	for (int i = 0; i < iSize; i++)

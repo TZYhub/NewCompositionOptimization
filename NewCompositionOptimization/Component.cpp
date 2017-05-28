@@ -70,8 +70,8 @@ float CComponent::GetBeforeRangeValue(const float afterCalcValue)
 	int iSize = m_vtComponentRange.size();
 	for (int i = 0; i < iSize; i++)
 	{
-		if (m_vtComponentRange.at(i) - afterCalcValue > 0.0000001
-			&& afterCalcValue - m_vtComponentRange.at(i) > -0.0000001  )//T即两值相等
+		if (m_vtComponentRange.at(i) - afterCalcValue < 0.0000001
+			&&  m_vtComponentRange.at(i) - afterCalcValue > -0.0000001  )//T即两值相等
 		{
 			return m_vtBeforeCalcRange.at(i);
 		}
