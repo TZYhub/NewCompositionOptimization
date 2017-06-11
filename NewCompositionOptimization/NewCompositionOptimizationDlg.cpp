@@ -492,7 +492,7 @@ float CNewCompositionOptimizationDlg::GetNatureCalcCoefficient(const CString& cN
 	if (!rt)//T如果固定值中没有，则使用公式计算
 	{
 		coeValue = GetNatureCalcCoeWithFormula(cName, nName, cValue);
-		coeValue = 1;
+		coeValue = 1;//T此句去掉即可
 	}
 	return coeValue;
 }
@@ -526,49 +526,35 @@ float CNewCompositionOptimizationDlg::GetNatureCalcCoeWithFormula(const CString&
 }
 
 //T获取选择的复选框，传入为Component获取组分，传入为Nature获取性质
-BOOL CNewCompositionOptimizationDlg::GetSelectCheckBox(const CString& str)
+BOOL CNewCompositionOptimizationDlg::GetSelectCheckBox(const CString& str, const vector<CString>& vtStr)
 {
 	BOOL rt = FALSE;
-	int iStartID = -1;
-	int iEndID = -1;
-	if ("Component" == str)
-	{
-		iStartID = IDC_CHECK_AL2O3;
-		iEndID = IDC_CHECK_ZrO2;
-	}
-	else if ("Nature" == str)
-	{
-		iStartID = IDC_CHECK_1_RPZXS;
-		iEndID = IDC_CHECK_31_RHWD;
-	}
 	map<CString, ChoiceValue>::iterator itMap;
 	CComponent component;
 	CNature nature;
 	CString strValue;
 
-	for(int i = iStartID; i <= iEndID; i++)
+	int strSize = vtStr.size();
+	for(int i = 0; i < strSize; i++)
 	{
-		if (((CButton*)GetDlgItem(i))->GetCheck())//判断复选框是否选中
+		strValue = vtStr.at(i);
+		if ("Component" == str)
 		{
-			GetDlgItemText(i, strValue);
-			if ("Component" == str)
+			component.SetComponentName(strValue);
+			m_vtComponent.push_back(component);
+			rt = TRUE;
+		}
+		else if ("Nature" == str)
+		{
+			nature.SetNatureName(strValue);
+			//从配置文件中获取的极大值或极小值
+			itMap = m_mapNatureChoiceValue.find(strValue);
+			if (itMap != m_mapNatureChoiceValue.end())
 			{
-				component.SetComponentName(strValue);
-				m_vtComponent.push_back(component);
-				rt = TRUE;
+				nature.SetNatureChoiceValue(itMap->second);
 			}
-			else if ("Nature" == str)
-			{
-				nature.SetNatureName(strValue);
-				//从配置文件中获取的极大值或极小值
-				itMap = m_mapNatureChoiceValue.find(strValue);
-				if (itMap != m_mapNatureChoiceValue.end())
-				{
-					nature.SetNatureChoiceValue(itMap->second);
-				}
-				m_vtNature.push_back(nature);
-				rt = TRUE;
-			}
+			m_vtNature.push_back(nature);
+			rt = TRUE;
 		}
 	}
 	return rt;
@@ -694,7 +680,6 @@ void CNewCompositionOptimizationDlg::CalculateComponentPercentage()
 		//T求i组的百分比
 		for (int j = 0; j < subSize; j++)
 		{
-			//m_vtComponentGrouping.at(i).at(j) /= (sumValue * 100);
 			m_vtComponentGrouping.at(i).at(j) = (m_vtComponentGrouping.at(i).at(j)/sumValue) * 100;
 		}
 	}
@@ -1181,21 +1166,28 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnStartOptimization()
 void CNewCompositionOptimizationDlg::OnBnClickedBtnSelectComponent()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	//把打钩的复选框，写入组分表格中
-	m_vtComponent.clear();
-	bool rt = GetSelectCheckBox(_T("Component"));
-	UpdateComponetList();
-	if (rt)
+	//T1、开启对话框，
+	//T2、等待用户确认后，获取组分数组，传给m_vtComponent变量
+	//T3、按照原有流程继续进行
+	CComponentDlg dlg;
+	if (dlg.DoModal() == IDOK)
 	{
-		/*把对话框设置到第一个*/
-		NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
-		pNMListView->iItem = 0;
-		pNMListView->iSubItem = 2;
+		//把打钩的复选框，写入组分表格中
+		m_vtComponent.clear();
+		bool rt = GetSelectCheckBox(_T("Component"),dlg.GetComponentSelectString());
+		UpdateComponetList();
+		if (rt)
+		{
+			/*把对话框设置到第一个*/
+			NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
+			pNMListView->iItem = 0;
+			pNMListView->iSubItem = 2;
 
-		NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
-		LRESULT pResult = 0;
-		OnNMDblclkListComponent(pNMHDR,&pResult);
-		delete pNMListView;
+			NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
+			LRESULT pResult = 0;
+			OnNMDblclkListComponent(pNMHDR,&pResult);
+			delete pNMListView;
+		}
 	}
 }
 
@@ -1203,21 +1195,33 @@ void CNewCompositionOptimizationDlg::OnBnClickedBtnSelectComponent()
 void CNewCompositionOptimizationDlg::OnBnClickedBtnSelectNature()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	m_vtNature.clear();
-	bool rt = GetSelectCheckBox(_T("Nature"));
-	UpdateNatureList();
-	if (rt)
+	//T1、开启对话框，
+	CNatureDlg dlg;
+	if(dlg.DoModal() == IDOK)
 	{
-		/*把对话框设置到第一个*/
-		NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
-		pNMListView->iItem = 0;
-		pNMListView->iSubItem = 2;
+		m_vtNature.clear();
+		vector<CString> selectNature = dlg.GetSelectVtNature();
+		
+		bool rt = GetSelectCheckBox(_T("Nature"), selectNature);
+		UpdateNatureList();
+		if (rt)
+		{
+			/*把对话框设置到第一个*/
+			NM_LISTVIEW* pNMListView = new NM_LISTVIEW;
+			pNMListView->iItem = 0;
+			pNMListView->iSubItem = 2;
 
-		NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
-		LRESULT pResult = 0;
-		OnNMDblclkListNature(pNMHDR,&pResult);
-		delete pNMListView;
+			NMHDR *pNMHDR = reinterpret_cast<NMHDR*>(pNMListView);
+			LRESULT pResult = 0;
+			OnNMDblclkListNature(pNMHDR,&pResult);
+			delete pNMListView;
+		}
 	}
+	//T2、等待用户确认后，获取组分数组，传给m_vtComponent变量
+	//T3、按照原有流程继续进行
+
+
+	
 }
 
 

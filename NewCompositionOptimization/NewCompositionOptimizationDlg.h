@@ -3,6 +3,8 @@
 //
 #include "Component.h"
 #include "Nature.h"
+#include "NatureDlg.h"
+#include "ComponentDlg.h"
 #pragma once
 
 
@@ -66,7 +68,7 @@ protected:
 	//T使用公式计算性质系数
 	float GetNatureCalcCoeWithFormula(const CString& cName, const CString& nName, const float cValue);
 
-	BOOL GetSelectCheckBox(const CString& str);			//T获取选择的复选框，传入为"Component"获取组分，传入为"Nature"获取性质
+	BOOL GetSelectCheckBox(const CString& str, const vector<CString>& vtStr);			//T获取选择的复选框，传入为"Component"获取组分，传入为"Nature"获取性质
 
 	bool JudgmentInput();								//判断输入是否符合优选要求
 

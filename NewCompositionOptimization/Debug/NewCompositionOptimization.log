@@ -1,4 +1,4 @@
-﻿Build started 2017/5/28 18:37:50.
+﻿Build started 2017/6/11 23:28:47.
      1>Project "E:\GITHUB\NewCompositionOptimization\NewCompositionOptimization\NewCompositionOptimization.vcxproj" on node 2 (clean target(s)).
      1>_PrepareForClean:
          Deleting file "Debug\NewCompositionOptimization.lastbuildstate".
@@ -6,4 +6,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:00.05
+Time Elapsed 00:00:00.65

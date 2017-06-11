@@ -100,7 +100,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Component.h" />
+    <ClInclude Include="ComponentDlg.h" />
     <ClInclude Include="Nature.h" />
+    <ClInclude Include="NatureDlg.h" />
     <ClInclude Include="NewCompositionOptimization.h" />
     <ClInclude Include="NewCompositionOptimizationDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -109,7 +111,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Component.cpp" />
+    <ClCompile Include="ComponentDlg.cpp" />
     <ClCompile Include="Nature.cpp" />
+    <ClCompile Include="NatureDlg.cpp" />
     <ClCompile Include="NewCompositionOptimization.cpp" />
     <ClCompile Include="NewCompositionOptimizationDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
