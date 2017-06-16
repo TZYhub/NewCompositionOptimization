@@ -95,8 +95,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
+    <None Include="res\gif1.bin" />
     <None Include="res\NewCompositionOptimization.ico" />
     <None Include="res\NewCompositionOptimization.rc2" />
+    <None Include="res\wait.gif" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Component.h" />
@@ -105,9 +107,11 @@
     <ClInclude Include="NatureDlg.h" />
     <ClInclude Include="NewCompositionOptimization.h" />
     <ClInclude Include="NewCompositionOptimizationDlg.h" />
+    <ClInclude Include="PictureEx.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="WaitDlg.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Component.cpp" />
@@ -116,10 +120,12 @@
     <ClCompile Include="NatureDlg.cpp" />
     <ClCompile Include="NewCompositionOptimization.cpp" />
     <ClCompile Include="NewCompositionOptimizationDlg.cpp" />
+    <ClCompile Include="PictureEx.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="WaitDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="NewCompositionOptimization.rc" />

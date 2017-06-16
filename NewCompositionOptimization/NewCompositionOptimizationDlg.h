@@ -5,8 +5,10 @@
 #include "Nature.h"
 #include "NatureDlg.h"
 #include "ComponentDlg.h"
+#include "WaitDlg.h"
 #pragma once
 
+#define WAITDLG 10000
 
 // CNewCompositionOptimizationDlg 对话框
 class CNewCompositionOptimizationDlg : public CDialogEx
@@ -22,8 +24,11 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 	
 // 实现
-protected:
+public:
 	HICON m_hIcon;
+
+	//连接网络线程
+	static unsigned int __stdcall CalculateThread(LPVOID lpVoid);   
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -87,12 +92,15 @@ protected:
 	void ClearData(bool bClearAll = false);						//清理中间传false ，清理所有传ture
 	
 public:
+	CWaitDlg m_waitDlg;									//等待对话框
+
 	CListCtrl m_ComponentList;							//组分列表
 	CListCtrl m_NatureList;								//性质列表
 	CListCtrl m_ResultList;								//结果列表
 	CEdit m_inputComEdit;								//组分输入编辑框
 	CEdit m_inputNatureEdit;							//性质输入编辑框
 
+	HANDLE m_hCalcThread;								//计算线程的句柄
 	//下面为自定义变量
 	vector<SNatureCalcCoefficient> m_vtFixedNatureCalcCoe;//T从配置文件中获取的，固定性质计算系数数组
 	map<CString, ChoiceValue> m_mapNatureChoiceValue;	//T从配置文件中获取的，性质选择极大值还是极小值

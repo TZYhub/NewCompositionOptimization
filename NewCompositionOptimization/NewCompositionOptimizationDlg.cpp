@@ -83,6 +83,61 @@ BEGIN_MESSAGE_MAP(CNewCompositionOptimizationDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
+unsigned int __stdcall CNewCompositionOptimizationDlg::CalculateThread(LPVOID lpVoid)    //连接网络线程
+{
+	CNewCompositionOptimizationDlg* mainDlg = reinterpret_cast<CNewCompositionOptimizationDlg*>(lpVoid);
+	while(!mainDlg->m_waitDlg.GetIsDoModel())//T等待界面开启后继续执行
+		Sleep(20);
+	
+	//二、开始计算
+	mainDlg->CalculateNature();
+
+	//所有结果都计算出来了，并存放在了m_mapNatureResult中
+	//三、筛选组成
+	//3.1初步筛选
+	vector<int> vt;//存储了符合要求的序号
+	if (mainDlg->PreSelect(vt))//如果初步筛选成功，则显示结果并退出
+	{
+		if (1 == vt.size())
+		{
+			mainDlg->Display(mainDlg->m_vtComponentGrouping, mainDlg->m_mapNatureResult, vt.front());
+			mainDlg->ClearData();
+			mainDlg->MessageBox(_T("初选后成功找到！"),DlgTitle);
+		}
+		else if (vt.size()>1)//否则进行精选
+		{
+			//3.2精选结果
+			//调用函数使初选结果存储在m_afterPreResult和m_mapAfterPreResult中
+			//只有需要精选时才需要调用此函数
+			mainDlg->ExtractPreResult(vt);
+
+			if (mainDlg->AccuSelect(vt))
+			{
+
+				//显示最优的组分
+				mainDlg->Display(mainDlg->m_afterPreResult, mainDlg->m_mapAfterPreResult, vt.front());
+				mainDlg->ClearData();
+				mainDlg->MessageBox(_T("精选后成功找到！"),DlgTitle);
+			}
+			else
+			{
+				mainDlg->ClearData();
+				mainDlg->MessageBox(_T("精选后无结果！"),DlgTitle);	
+			}
+		}
+	}
+	else
+	{
+		mainDlg->ClearData();
+		mainDlg->MessageBox(_T("初选后无结果！"),DlgTitle);
+	}
+
+
+	mainDlg->PostMessage(WAITDLG, 1, 0);
+	return 1;
+}
+
+
 // CNewCompositionOptimizationDlg 消息处理程序
 
 BOOL CNewCompositionOptimizationDlg::OnInitDialog()
@@ -1111,53 +1166,25 @@ void CNewCompositionOptimizationDlg::ClearData(bool bClearAll/* =false */)
 void CNewCompositionOptimizationDlg::OnBnClickedBtnStartOptimization()
 {
 	// TODO: 在此添加控件通知处理程序代码
+
+	PostMessage(WAITDLG, 0, 0);//T此处是打开等待对话框，发送打开等待消息 OnOpenWaitDlg
+
+
 	//T判断输入是否符合要求
 	if (!JudgmentInput())
 	{
 		return;
 	}
-	//二、开始计算
-	CalculateNature();
 
-	//所有结果都计算出来了，并存放在了m_mapNatureResult中
-	//三、筛选组成
-	//3.1初步筛选
-	vector<int> vt;//存储了符合要求的序号
-	if (PreSelect(vt))//如果初步筛选成功，则显示结果并退出
+	m_hCalcThread = (HANDLE)_beginthreadex(NULL, 0, CalculateThread,(LPVOID)this,CREATE_SUSPENDED,NULL);
+	if (!m_hCalcThread)
 	{
-		if (1 == vt.size())
-		{
-			Display(m_vtComponentGrouping, m_mapNatureResult, vt.front());
-			ClearData();
-			MessageBox(_T("初选后成功找到！"),DlgTitle);
-		}
-		else if (vt.size()>1)//否则进行精选
-		{
-			//3.2精选结果
-			//调用函数使初选结果存储在m_afterPreResult和m_mapAfterPreResult中
-			//只有需要精选时才需要调用此函数
-			ExtractPreResult(vt);
-
-			if (AccuSelect(vt))
-			{
-
-				//显示最优的组分
-				Display(m_afterPreResult, m_mapAfterPreResult, vt.front());
-				ClearData();
-				MessageBox(_T("精选后成功找到！"),DlgTitle);
-			}
-			else
-			{
-				ClearData();
-				MessageBox(_T("精选后无结果！"),DlgTitle);	
-			}
-		}
+		MessageBox(_T("创建网络连接线程失败！"));
+		PostMessage(WAITDLG, 1, 0);
 	}
-	else
-	{
-		ClearData();
-		MessageBox(_T("初选后无结果！"),DlgTitle);
-	}
+	ResumeThread(m_hCalcThread);
+
+	
 
 	
 }
@@ -1364,7 +1391,28 @@ BOOL CNewCompositionOptimizationDlg::PreTranslateMessage(MSG* pMsg)
 			
 			return TRUE;  
 		}  
-	}  
+	} 
+
+	if(pMsg->message == WAITDLG)
+	{
+		switch(pMsg->wParam)
+		{
+		case 0://开启等待对话框
+			if (!m_waitDlg.GetIsDoModel())
+			{
+				m_waitDlg.SetIsDoModel(TRUE);
+				m_waitDlg.DoModal();
+			}
+			break;
+		case 1://关闭等待对话框
+			if (m_waitDlg.GetIsDoModel())
+			{
+				m_waitDlg.SetIsDoModel(FALSE);
+				m_waitDlg.EndDlg();
+			}
+			break;
+		}
+	}
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 

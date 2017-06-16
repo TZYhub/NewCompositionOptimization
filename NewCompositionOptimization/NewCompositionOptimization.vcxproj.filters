@@ -22,6 +22,12 @@
     <None Include="res\NewCompositionOptimization.ico">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="res\gif1.bin">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\wait.gif">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NewCompositionOptimization.h">
@@ -51,12 +57,15 @@
     <ClInclude Include="ComponentDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="PictureEx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WaitDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NewCompositionOptimization.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="NewCompositionOptimizationDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
@@ -72,6 +81,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ComponentDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PictureEx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="WaitDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NewCompositionOptimizationDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
