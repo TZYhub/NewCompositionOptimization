@@ -9,6 +9,7 @@ public:
 	static void SetComponentFixedValue(const map<CString, float>& mapFixedValue);//设置组分计算的固定系数
 	//T获取组分截取数组
 	vector<float> &GetVtComponentRange(){return m_vtComponentRange;}
+	vector<float>& GetVtComponentBeforeRange(){return m_vtBeforeCalcRange;}
 	const CString& GetComponentName(){return m_ComponentName;}
 	const CString& GetStrComponentRange(){return m_strRange;}
 	void SetComponentName(const CString& cName);

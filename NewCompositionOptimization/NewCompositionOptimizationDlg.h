@@ -27,7 +27,7 @@ public:
 public:
 	HICON m_hIcon;
 
-	//连接网络线程
+	//计算线程
 	static unsigned int __stdcall CalculateThread(LPVOID lpVoid);   
 
 	// 生成的消息映射函数

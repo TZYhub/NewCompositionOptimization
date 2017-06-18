@@ -88,7 +88,6 @@ unsigned int __stdcall CNewCompositionOptimizationDlg::CalculateThread(LPVOID lp
 	CNewCompositionOptimizationDlg* mainDlg = reinterpret_cast<CNewCompositionOptimizationDlg*>(lpVoid);
 	while(!mainDlg->m_waitDlg.GetIsDoModel())//T等待界面开启后继续执行
 		Sleep(20);
-	
 	//二、开始计算
 	mainDlg->CalculateNature();
 
@@ -675,43 +674,79 @@ void CNewCompositionOptimizationDlg::CalculateNature()
 //index 为需要计算的数组中的第几个值 
 void CNewCompositionOptimizationDlg::Calculate(const int index, vector<float> &vtSub)
 {
-	if (index < m_vtComponent.size())//表明这不是最后一个
+	//if (index < m_vtComponent.size())//表明这不是最后一个
+	//{
+	//	//it--;//减去判断时加的1
+	//	vector<float> vt = m_vtComponent.at(index).GetVtComponentRange();
+	//	int subSize = vt.size();
+	//	for (int i = 0; i < subSize; i++)
+	//	{
+	//		vtSub.at(index) = vt.at(i);
+	//		Calculate(index+1, vtSub);
+	//	}
+	//}
+	//else//是最后一个
+	//{
+	//	m_vtComponentGroupingBefore.push_back(vtSub);
+	//}
+
+	int vtSubSize = vtSub.size();
+	int componetIndex = 0;
+	for (int i = 0; i < vtSubSize; i++)
 	{
-		//it--;//减去判断时加的1
-		vector<float> vt = m_vtComponent.at(index).GetVtComponentRange();
-		int subSize = vt.size();
-		for (int i = 0; i < subSize; i++)
+		
+		//找到vtComponent中的第i个组分的分组数组，并取出对应的值，即求出索引值
+		//求索引值
+		//求出i后的剩余的组分分组乘积值
+		int multValue = 1;
+		for (int mult = i+1; mult < vtSubSize; mult++)
 		{
-			vtSub.at(index) = vt.at(i);
-			Calculate(index+1, vtSub);
+			multValue = multValue * m_vtComponent.at(mult).GetVtComponentRange().size();//组分分组的大小相乘
 		}
+		componetIndex = (index / multValue) % (m_vtComponent.at(i).GetVtComponentRange().size());
+
+		vtSub.at(i) = m_vtComponent.at(i).GetVtComponentBeforeRange().at(componetIndex);//给数组赋值
 	}
-	else//是最后一个
-	{
-		m_vtComponentGroupingBefore.push_back(vtSub);
-	}
-	
 }
 
 //T组合截断组分数据
 void CNewCompositionOptimizationDlg::CombinationTruncationData()
 {
+	//m_vtComponentGroupingBefore.clear();//清理上一次数据
+	//m_vtComponentGrouping.clear();
+	//int typeNumber = m_vtComponent.size();//有多少种物质
+	//vector<float> vtSub(typeNumber);
+	////调用递归函数实现循环，实现分组
+	////分组数据存放到了vector<vector<float>> m_subResult中
+	////0组 1 3 5 7
+	////1组 1 3 5 8
+	////2组 1 3 6 7
+	////   ...
+	//vector<float> vt = m_vtComponent.at(0).GetVtComponentRange();
+	//int subSize = vt.size();
+	//for (int i = 0; i < subSize; i++)
+	//{
+	//	vtSub.at(0) = vt.at(i);
+	//	Calculate(1, vtSub);
+	//}
+	//m_vtComponentGrouping = m_vtComponentGroupingBefore;
+
+	//方法二
 	m_vtComponentGroupingBefore.clear();//清理上一次数据
 	m_vtComponentGrouping.clear();
-	int typeNumber = m_vtComponent.size();//有多少种物质
-	vector<float> vtSub(typeNumber);
-	//调用递归函数实现循环，实现分组
-	//分组数据存放到了vector<vector<float>> m_subResult中
-	//0组 1 3 5 7
-	//1组 1 3 5 8
-	//2组 1 3 6 7
-	//   ...
-	vector<float> vt = m_vtComponent.at(0).GetVtComponentRange();
-	int subSize = vt.size();
-	for (int i = 0; i < subSize; i++)
+	//计算循环次数,即所有组分分组大小的乘积
+	int vtSum = 1;
+	int vtCompSize = m_vtComponent.size(); 
+	for (int i = 0; i < vtCompSize; i++)
 	{
-		vtSub.at(0) = vt.at(i);
-		Calculate(1, vtSub);
+		vtSum = vtSum * m_vtComponent.at(i).GetVtComponentRange().size();//组分分组的大小相乘
+	}
+	//给二维数组赋值
+	vector<float> vtSub(vtCompSize);
+	for (int i = 0; i < vtSum; i++)
+	{
+		Calculate(i,vtSub);
+		m_vtComponentGroupingBefore.push_back(vtSub);
 	}
 	m_vtComponentGrouping = m_vtComponentGroupingBefore;
 }
@@ -1141,7 +1176,7 @@ void CNewCompositionOptimizationDlg::ClearData(bool bClearAll/* =false */)
 	m_mapAfterPreResultDi.clear();
 	if (bClearAll)
 	{
-		for (UINT i = IDC_CHECK_AL2O3; i < IDC_CHECK_ZrO2; i++)
+		/*for (UINT i = IDC_CHECK_AL2O3; i < IDC_CHECK_ZrO2; i++)
 		{
 			if(((CButton*)GetDlgItem(i))->GetCheck())
 			{
@@ -1154,7 +1189,7 @@ void CNewCompositionOptimizationDlg::ClearData(bool bClearAll/* =false */)
 			{
 				((CButton*)GetDlgItem(i))->SetCheck(0);
 			}
-		}
+		}*/
 		m_vtComponent.clear();
 		m_vtNature.clear();
 		UpdateComponetList();
@@ -1452,14 +1487,14 @@ void CNewCompositionOptimizationDlg::OnBnClickedBinImport()
 		a = vtRead.at(i).Find(',');
 		strName = vtRead.at(i).Left(a);//1.取出逗号前的组分名
 		strRange = vtRead.at(i).Right(vtRead.at(i).GetLength() - a - 1);//3.取出性质系数的值
-		for (UINT i = IDC_CHECK_AL2O3; i < IDC_CHECK_ZrO2; i++)
+		/*for (UINT i = IDC_CHECK_AL2O3; i < IDC_CHECK_ZrO2; i++)
 		{
-			GetDlgItem(i)->GetWindowText(strCompare);
-			if(strName == strCompare)
-			{
-				((CButton*)GetDlgItem(i))->SetCheck(1);
-			}
+		GetDlgItem(i)->GetWindowText(strCompare);
+		if(strName == strCompare)
+		{
+		((CButton*)GetDlgItem(i))->SetCheck(1);
 		}
+		}*/
 		componet.SetComponentName(strName);
 		componet.SetStrComponentRange(strRange);
 		m_vtComponent.push_back(componet);
@@ -1475,14 +1510,14 @@ void CNewCompositionOptimizationDlg::OnBnClickedBinImport()
 		a = vtRead.at(i).Find(',');
 		strName = vtRead.at(i).Left(a);//1.取出逗号前的组分名
 		strRange = vtRead.at(i).Right(vtRead.at(i).GetLength() - a - 1);//3.取出性质系数的值
-		for (UINT i = IDC_CHECK_1_RPZXS; i < IDC_CHECK_31_RHWD; i++)
+		/*for (UINT i = IDC_CHECK_1_RPZXS; i < IDC_CHECK_31_RHWD; i++)
 		{
 			GetDlgItem(i)->GetWindowText(strCompare);
 			if(strName == strCompare)
 			{
 				((CButton*)GetDlgItem(i))->SetCheck(1);
 			}
-		}
+		}*/
 
 		nature.SetNatureName(strName);
 		nature.SetStrNatureRange(strRange);

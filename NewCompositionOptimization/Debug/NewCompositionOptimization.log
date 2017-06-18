@@ -1,9 +1,9 @@
-﻿生成启动时间为 2017/6/16 17:11:56。
-     1>项目“C:\Users\micro\Desktop\发送文件\NewCompositionOptimization\NewCompositionOptimization\NewCompositionOptimization.vcxproj”在节点 2 上(clean 个目标)。
+﻿Build started 2017/6/18 22:35:21.
+     1>Project "E:\GITHUB\NewCompositionOptimization\NewCompositionOptimization\NewCompositionOptimization.vcxproj" on node 2 (clean target(s)).
      1>_PrepareForClean:
-         正在删除文件“Debug\NewCompositionOptimization.lastbuildstate”。
-     1>已完成生成项目“C:\Users\micro\Desktop\发送文件\NewCompositionOptimization\NewCompositionOptimization\NewCompositionOptimization.vcxproj”(clean 个目标)的操作。
+         Deleting file "Debug\NewCompositionOptimization.lastbuildstate".
+     1>Done Building Project "E:\GITHUB\NewCompositionOptimization\NewCompositionOptimization\NewCompositionOptimization.vcxproj" (clean target(s)).
 
-生成成功。
+Build succeeded.
 
-已用时间 00:00:00.05
+Time Elapsed 00:00:00.12
