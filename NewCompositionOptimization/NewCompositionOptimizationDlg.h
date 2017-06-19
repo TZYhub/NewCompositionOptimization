@@ -83,6 +83,7 @@ public:
 	void CalculateEachGroupNature();					//T计算每一组对应的性质
 	void Calculate(map<int,vector<float>>::iterator itMap);
 	void Calculate(const int index, vector<float> &vt);
+	void Calculate(const int index);
 
 	bool PreSelect(vector<int> &vtResultIndex);			//初选  
 	void ExtractPreResult(vector<int> vtResultIndex);	//提取初选结果，到m_afterPreResult和m_mapAfterPreResult中

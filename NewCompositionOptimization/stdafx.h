@@ -49,7 +49,7 @@ enum ChoiceValue
 	LargeValue = 0,SmallVaule
 };
 
-typedef struct SNatureCalcCoefficient	//T性质计算系数
+struct SNatureCalcCoefficient	//T性质计算系数
 {
 	CString ComponentName;			//T组分名称
 	CString NatureName;					//T性质名称

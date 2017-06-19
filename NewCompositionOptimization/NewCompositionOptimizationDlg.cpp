@@ -674,40 +674,73 @@ void CNewCompositionOptimizationDlg::CalculateNature()
 //index 为需要计算的数组中的第几个值 
 void CNewCompositionOptimizationDlg::Calculate(const int index, vector<float> &vtSub)
 {
-	//if (index < m_vtComponent.size())//表明这不是最后一个
-	//{
-	//	//it--;//减去判断时加的1
-	//	vector<float> vt = m_vtComponent.at(index).GetVtComponentRange();
-	//	int subSize = vt.size();
-	//	for (int i = 0; i < subSize; i++)
-	//	{
-	//		vtSub.at(index) = vt.at(i);
-	//		Calculate(index+1, vtSub);
-	//	}
-	//}
-	//else//是最后一个
-	//{
-	//	m_vtComponentGroupingBefore.push_back(vtSub);
-	//}
-
-	int vtSubSize = vtSub.size();
-	int componetIndex = 0;
-	for (int i = 0; i < vtSubSize; i++)
+	if (index < m_vtComponent.size())//表明这不是最后一个
 	{
-		
-		//找到vtComponent中的第i个组分的分组数组，并取出对应的值，即求出索引值
-		//求索引值
-		//求出i后的剩余的组分分组乘积值
-		int multValue = 1;
-		for (int mult = i+1; mult < vtSubSize; mult++)
+		//it--;//减去判断时加的1
+		vector<float> vt = m_vtComponent.at(index).GetVtComponentRange();
+		int subSize = vt.size();
+		for (int i = 0; i < subSize; i++)
 		{
-			multValue = multValue * m_vtComponent.at(mult).GetVtComponentRange().size();//组分分组的大小相乘
+			vtSub.at(index) = vt.at(i);
+			Calculate(index+1, vtSub);
 		}
-		componetIndex = (index / multValue) % (m_vtComponent.at(i).GetVtComponentRange().size());
+	}
+	else//是最后一个
+	{
+		m_vtComponentGroupingBefore.push_back(vtSub);
+	}
 
-		vtSub.at(i) = m_vtComponent.at(i).GetVtComponentBeforeRange().at(componetIndex);//给数组赋值
+	//int vtSubSize = vtSub.size();
+	//int componetIndex = 0;
+	//for (int i = 0; i < vtSubSize; i++)
+	//{
+	//	
+	//	//找到vtComponent中的第i个组分的分组数组，并取出对应的值，即求出索引值
+	//	//求索引值
+	//	//求出i后的剩余的组分分组乘积值
+	//	int multValue = 1;
+	//	for (int mult = i+1; mult < vtSubSize; mult++)
+	//	{
+	//		multValue = multValue * m_vtComponent.at(mult).GetVtComponentRange().size();//组分分组的大小相乘
+	//	}
+	//	componetIndex = (index / multValue) % (m_vtComponent.at(i).GetVtComponentRange().size());
+
+	//	vtSub.at(i) = m_vtComponent.at(i).GetVtComponentBeforeRange().at(componetIndex);//给数组赋值
+	//}
+}
+
+//index 为需要计算的数组中的第几个值 
+void CNewCompositionOptimizationDlg::Calculate(const int index)
+{
+	//找到vtComponent中的第i个组分的分组数组，并取出对应的值，即求出索引值
+	//求索引值
+	//求出i后的剩余的组分分组乘积值
+	int componetIndex = 0;
+	int multValue = 1;
+
+	int vtSize = m_vtComponent.size();
+	for (int mult = index+1; mult < vtSize; mult++)
+	{
+		multValue = multValue * m_vtComponent.at(mult).GetVtComponentRange().size();//组分分组的大小相乘
+	}
+
+	int vtGroupSize = m_vtComponentGroupingBefore.size();
+	int rangeSize = m_vtComponent.at(index).GetVtComponentRange().size();
+	vector<float> vtComponentBefore = m_vtComponent.at(index).GetVtComponentRange();
+	int tempValue = 0;
+	int j;
+	for (int i = 0; i < vtGroupSize; i++)
+	{
+		componetIndex = (i / multValue) % rangeSize;
+		tempValue = multValue + i;
+		for (j = i; j < tempValue; j++)
+		{
+			m_vtComponentGroupingBefore.at(j).at(index) = vtComponentBefore.at(componetIndex);//给数组赋值
+		}
+		i = j - 1;
 	}
 }
+
 
 //T组合截断组分数据
 void CNewCompositionOptimizationDlg::CombinationTruncationData()
@@ -743,10 +776,12 @@ void CNewCompositionOptimizationDlg::CombinationTruncationData()
 	}
 	//给二维数组赋值
 	vector<float> vtSub(vtCompSize);
-	for (int i = 0; i < vtSum; i++)
+	vector<vector<float>> vtComponentGroupingBefore(vtSum,vtSub);
+	m_vtComponentGroupingBefore.swap(vtComponentGroupingBefore);
+
+	for (int i = 0; i < vtCompSize; i++)
 	{
-		Calculate(i,vtSub);
-		m_vtComponentGroupingBefore.push_back(vtSub);
+		Calculate(i);
 	}
 	m_vtComponentGrouping = m_vtComponentGroupingBefore;
 }
